@@ -26,9 +26,13 @@
                 <h1>Welcome back</h1>
                 <p class="auth-subtitle">Sign in to continue to your dashboard</p>
 
-                {% if error %}
-                <div class="auth-alert"><i data-lucide="alert-circle" style="width:16px;height:16px;"></i> {{ error }}</div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="auth-alert flash-{{ category }}"><i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'warning' %}alert-triangle{% elif category == 'danger' %}alert-circle{% elif category == 'info' %}info{% else %}message-circle{% endif %}" style="width:16px;height:16px;"></i> {{ message }}</div>
+                {% endfor %}
                 {% endif %}
+                {% endwith %}
 
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -102,6 +106,10 @@
     margin-bottom: 20px; font-family: var(--font-sans);
     font-size: 13.5px; font-weight: 500;
 }
+.auth-alert.flash-success { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
+.auth-alert.flash-warning { background: var(--gold-tint); color: var(--gold-deep); border: 1px solid var(--gold); }
+.auth-alert.flash-info { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
+.auth-alert.flash-danger { background: var(--cashout-tint); color: var(--cashout); border: 1px solid var(--cashout); }
 .auth-footer {
     text-align: center; margin-top: 24px;
     font-family: var(--font-sans); font-size: 14px; color: var(--ink-faint);
