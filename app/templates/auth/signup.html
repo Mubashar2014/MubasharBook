@@ -45,8 +45,16 @@
                         <input type="tel" name="phone" placeholder="03XX XXXXXXX" required>
                     </div>
                     <div class="field">
+                        <label><i data-lucide="mail" style="width:14px;height:14px;"></i> Email address *</label>
+                        <input type="email" name="email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="field">
                         <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Password *</label>
-                        <input type="password" name="password" placeholder="Min 6 characters" required minlength="6">
+                        <input type="password" name="password" placeholder="Min 8 characters" required minlength="8">
+                    </div>
+                    <div class="field">
+                        <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Confirm Password *</label>
+                        <input type="password" name="confirm_password" placeholder="Confirm password" required minlength="8">
                     </div>
 
                     <div style="border-top:1px solid var(--rule);margin:20px 0;padding-top:20px;">
@@ -57,7 +65,7 @@
                         </div>
                         <div class="field">
                             <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Total investment (Rs) *</label>
-                            <input type="number" name="total_investment" placeholder="How much capital you're putting in" required min="0" step="1">
+                            <input type="number" name="total_investment" placeholder="How much capital you're putting in" required min="0" step="1000">
                         </div>
                     </div>
 
