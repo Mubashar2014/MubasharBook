@@ -1,0 +1,101 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Periods — Mubashar's Book{% endblock %}
+{% block page_title %}Periods{% endblock %}
+{% block page_path %}Shareholders / Periods{% endblock %}
+{% block topbar_badge %}PRO{% endblock %}
+
+{% block content %}
+
+<div class="section-head">
+    <h3>Accounting Periods</h3>
+    <form method="POST" action="{{ url_for('shareholders.create_period') }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary btn-sm">+ New 30-Day Period</button>
+    </form>
+</div>
+
+{% if periods %}
+{% for p in periods %}
+<div class="card" style="margin-bottom: 14px;">
+    <div class="card-pad">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                    <span class="badge {% if p.status == 'open' %}badge-open{% else %}badge-locked{% endif %}">
+                        {{ 'Open' if p.status == 'open' else 'Locked' }}
+                    </span>
+                    <span style="font-weight: 700; font-size: 15px;">
+                        {{ p.period_start.strftime("%d %b") }} — {{ p.period_end.strftime("%d %b %Y") }}
+                    </span>
+                </div>
+
+                {% if p.status == 'open' and p._live_profit is defined %}
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 700;">Net Profit</div>
+                        <div style="font-family: 'Fraunces', serif; font-size: 22px; {% if p._live_profit|float >= 0 %}color: var(--ledger-deep);{% else %}color: var(--cashout);{% endif %}">
+                            Rs {{ "{:,.0f}".format(p._live_profit|float) }}
+                        </div>
+                    </div>
+                    {% if p._live_split and p._live_split.splits %}
+                    <div style="flex: 1;">
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 700; margin-bottom: 6px;">Partner Split Preview</div>
+                        {% for s in p._live_split.splits %}
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px dotted var(--rule-soft);">
+                            <span>{{ s.name }} ({{ "%.1f"|format(s.investment_ratio) }}%)</span>
+                            <span class="num" style="font-weight: 600;">Rs {{ "{:,.0f}".format(s.share_amount|float) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% elif p.status == 'locked' and p._snapshots is defined %}
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;">
+                    {% for snap in p._snapshots %}
+                    <div style="background: var(--paper-alt); border-radius: 8px; padding: 12px 16px; min-width: 140px;">
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 700;">Partner #{{ snap.partner_id }}</div>
+                        <div style="font-family: 'Fraunces', serif; font-size: 17px; font-weight: 700; margin-top: 2px;">
+                            Rs {{ "{:,.0f}".format(snap.share_amount|float) }}
+                        </div>
+                        <div style="font-size: 11px; color: var(--ink-faint);">
+                            {{ "%.1f"|format(snap.investment_ratio_at_lock) }}% ratio
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if p.locked_at %}
+                <div style="font-size: 11px; color: var(--ink-faint); margin-top: 8px;">
+                    Locked {{ p.locked_at.strftime("%d %b %Y %H:%M") }}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if p.status == 'open' %}
+            <form method="POST" action="{{ url_for('shareholders.lock_period_route', period_id=p.id) }}"
+                  onsubmit="return confirm('WARNING: Locking is IRREVERSIBLE.\n\nOnce locked, these figures will never change.\n\nProceed?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-gold btn-sm" style="white-space: nowrap;">&#128274; Lock Period</button>
+            </form>
+            {% else %}
+            <div style="display: flex; align-items: center; gap: 6px; color: var(--ink-faint); font-size: 13px;">
+                &#128274; Locked
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+    <div class="card-pad" style="text-align: center; padding: 48px 22px; color: var(--ink-faint);">
+        <div style="font-size: 36px; margin-bottom: 12px;">&#128197;</div>
+        <div style="font-size: 16px; font-weight: 600; margin-bottom: 6px;">No periods yet</div>
+        <div style="font-size: 14px;">Create your first 30-day accounting period to start tracking partner splits.</div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

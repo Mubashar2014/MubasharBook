@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div style="min-height:100vh; display:flex; flex-direction:column; background:var(--paper-alt);">
+
+    <!-- Topbar -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--ink); color:#fff; border-bottom:3px solid var(--gold);">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="brand-mark" style="width:30px; height:30px; font-size:15px;">M</div>
+            <span style="font-family:'Fraunces',serif; font-weight:700; font-size:17px;">Mubashar's Book</span>
+            <span style="background:var(--gold); color:#241B04; font-size:10px; font-weight:800; padding:3px 8px; border-radius:10px; margin-left:4px;">INVESTOR</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <span style="font-size:13px; color:#B9C4D6;">{{ investor.name }}</span>
+            <div style="width:34px; height:34px; border-radius:50%; background:var(--gold); color:#241B04; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;">
+                {{ investor.name[0] | upper }}
+            </div>
+            <form method="POST" action="{{ url_for('investor.logout') }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" style="background:transparent; border:1px solid #3A4A6B; color:#B9C4D6; padding:6px 14px; border-radius:6px; font-size:12px; cursor:pointer;">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div style="background:var(--card); border-bottom:1px solid var(--rule); padding:0 28px; display:flex; gap:0;">
+        <a href="{{ url_for('investor.dashboard') }}"
+           style="padding:14px 20px; font-size:13.5px; font-weight:600; border-bottom:3px solid {% if request.endpoint == 'investor.dashboard' %}var(--ledger){% else %}transparent{% endif %}; color:{% if request.endpoint == 'investor.dashboard' %}var(--ink){% else %}var(--ink-faint){% endif %}; transition:0.15s;">
+            Dashboard
+        </a>
+        <a href="{{ url_for('investor.my_phones') }}"
+           style="padding:14px 20px; font-size:13.5px; font-weight:600; border-bottom:3px solid {% if request.endpoint == 'investor.my_phones' %}var(--ledger){% else %}transparent{% endif %}; color:{% if request.endpoint == 'investor.my_phones' %}var(--ink){% else %}var(--ink-faint){% endif %}; transition:0.15s;">
+            My Phones
+        </a>
+        <a href="{{ url_for('investor.profit_share') }}"
+           style="padding:14px 20px; font-size:13.5px; font-weight:600; border-bottom:3px solid {% if request.endpoint == 'investor.profit_share' %}var(--ledger){% else %}transparent{% endif %}; color:{% if request.endpoint == 'investor.profit_share' %}var(--ink){% else %}var(--ink-faint){% endif %}; transition:0.15s;">
+            My Profit Share
+        </a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div style="padding:14px 28px 0;">
+                {% for category, message in messages %}
+                    <div style="padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13.5px;
+                        {% if category == 'success' %}background:var(--ledger-tint); color:var(--ledger-deep);
+                        {% elif category == 'danger' %}background:var(--cashout-tint); color:var(--cashout);
+                        {% elif category == 'warning' %}background:var(--gold-tint); color:#8A6A1E;
+                        {% else %}background:#EDEFF3; color:var(--ink-soft);{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Content -->
+    <div style="flex:1; padding:24px 28px;">
+        {% block investor_content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:18px 28px; background:var(--card); border-top:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--ink-faint);">
+        <span>&copy; 2026 Mubashar's Book</span>
+        <span>Investor Portal</span>
+    </div>
+</div>
+{% endblock %}

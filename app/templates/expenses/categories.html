@@ -1,0 +1,73 @@
+{% extends "app_layout.html" %}
+{% block title %}Expense Categories — Mubashar's Book{% endblock %}
+{% block page_title %}Expense Categories{% endblock %}
+{% block page_path %}Home / Expenses / Categories{% endblock %}
+
+{% block content %}
+<div class="section-head">
+    <h3>Expense Categories</h3>
+    <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline btn-sm">Back to Expenses</a>
+</div>
+
+<!-- Add new category form -->
+<div class="card card-pad" style="max-width:480px; margin-bottom:20px;">
+    <h4 style="font-size:15px; margin-bottom:12px;">Add New Category</h4>
+    <form method="POST" action="{{ url_for('expenses.add_category') }}" style="display:flex; gap:10px; align-items:flex-end;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field" style="flex:1; margin-bottom:0;">
+            <label for="name">Category Name</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Marketing" required maxlength="100"
+                   style="width:100%; padding:10px 12px; border:1px solid var(--rule); border-radius:8px; font-size:14px; font-family:inherit; background:var(--paper); color:var(--ink);">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="height:40px;">Add</button>
+    </form>
+</div>
+
+<!-- Categories list -->
+<div class="card">
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in categories %}
+                <tr>
+                    <td data-label="Category">{{ cat.name }}</td>
+                    <td data-label="Type">
+                        {% if cat.is_default %}
+                            <span class="badge badge-instock">Default</span>
+                        {% else %}
+                            <span class="badge badge-reserved">Custom</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Actions">
+                        {% if not cat.is_default %}
+                        <form method="POST" action="{{ url_for('expenses.delete_category', cat_id=cat.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline btn-sm"
+                                    onclick="return confirm('Delete this category?')">
+                                Delete
+                            </button>
+                        </form>
+                        {% else %}
+                            <span style="font-size:12px; color:var(--ink-faint);">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align:center; padding:32px; color:var(--ink-faint);">
+                        No categories found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

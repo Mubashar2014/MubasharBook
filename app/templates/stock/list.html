@@ -1,0 +1,133 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Stock — Mubashar's Book{% endblock %}
+{% block page_title %}Stock{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock{% endblock %}
+
+{% block topbar_badge %}
+    <i data-lucide="smartphone" style="width:12px;height:12px;"></i> {{ total_items }} items
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stat-grid">
+    <div class="stat-card animate-on-scroll delay-1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Total Items</div>
+            <div class="stat-icon" style="background:var(--ink);color:var(--gold);"><i data-lucide="layers" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v num">{{ total_items }}</div>
+    </div>
+    <div class="stat-card animate-on-scroll delay-2">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">In Stock</div>
+            <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="package" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v pos num">{{ in_stock_count }}</div>
+    </div>
+    <div class="stat-card animate-on-scroll delay-3">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Sold</div>
+            <div class="stat-icon" style="background:var(--paper-alt);color:var(--ink-faint);"><i data-lucide="check-circle" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v num">{{ sold_count }}</div>
+    </div>
+    <div class="stat-card animate-on-scroll delay-4">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Stock Value</div>
+            <div class="stat-icon" style="background:var(--gold-tint);color:var(--gold-deep);"><i data-lucide="banknote" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v num">Rs {{ "{:,.0f}".format(total_value|float) }}</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-row animate-on-scroll">
+    <a href="{{ url_for('stock.stock_in') }}" class="btn btn-primary">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Add Stock (Buy)
+    </a>
+</div>
+
+<!-- Filter + Search -->
+<div class="card animate-on-scroll" style="margin-bottom:20px;">
+    <div class="card-pad" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div class="filter-chips">
+            <a href="?status=all" class="chip {% if status_filter == 'all' %}active{% endif %}">All</a>
+            <a href="?status=in_stock" class="chip {% if status_filter == 'in_stock' %}active{% endif %}">In Stock</a>
+            <a href="?status=sold" class="chip {% if status_filter == 'sold' %}active{% endif %}">Sold</a>
+        </div>
+        <form method="GET" style="margin-left:auto;">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <div class="search-box">
+                <i data-lucide="search" style="width:16px;height:16px;"></i>
+                <input type="text" name="q" value="{{ search }}" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stock Table -->
+<div class="card animate-on-scroll">
+    <div class="card-pad">
+        {% if items %}
+        <div style="overflow-x:auto;">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th><i data-lucide="smartphone" style="width:12px;height:12px;"></i> Model</th>
+                        <th><i data-lucide="hash" style="width:12px;height:12px;"></i> IMEI</th>
+                        <th class="num"><i data-lucide="hash" style="width:12px;height:12px;"></i> Qty</th>
+                        <th class="num"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Cost</th>
+                        <th><i data-lucide="user" style="width:12px;height:12px;"></i> Supplier</th>
+                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Purchased</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td style="font-weight:600;">{{ item.model_name }}</td>
+                        <td style="font-family:monospace;font-size:12px;">{{ item.imei or '—' }}</td>
+                        <td class="num">{{ item.quantity }}</td>
+                        <td class="num" style="color:var(--cashout);font-weight:600;">Rs {{ "{:,.0f}".format(item.cost_price|float) }}</td>
+                        <td>{{ item.supplier_name or '—' }}</td>
+                        <td style="white-space:nowrap;">{{ item.purchase_date.strftime('%d %b %Y') }}</td>
+                        <td>
+                            {% if item.status == 'in_stock' %}
+                                <span class="badge badge-instock"><i data-lucide="package" style="width:10px;height:10px;"></i> In Stock</span>
+                            {% else %}
+                                <span class="badge badge-sold"><i data-lucide="check-circle" style="width:10px;height:10px;"></i> Sold</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.status == 'in_stock' %}
+                            <div style="display:flex;gap:6px;">
+                                <a href="{{ url_for('stock.stock_out', item_id=item.id) }}" class="btn btn-primary btn-sm">
+                                    <i data-lucide="shopping-cart" style="width:14px;height:14px;"></i> Sell
+                                </a>
+                                <a href="{{ url_for('stock.edit_stock', item_id=item.id) }}" class="btn btn-outline btn-sm">
+                                    <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span style="font-size:12px;color:var(--ink-faint);">
+                                {{ item.customer_name or 'Cash' }} — Rs {{ "{:,.0f}".format(item.sale_price|float) }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="package" style="width:40px;height:40px;"></i></div>
+            <div class="empty-title">No stock items yet</div>
+            <div class="empty-desc">Click "Add Stock (Buy)" to add your first phone.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

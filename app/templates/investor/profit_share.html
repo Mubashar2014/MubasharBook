@@ -1,0 +1,120 @@
+{% extends "investor_layout.html" %}
+{% block title %}My Profit Share — Investor Portal{% endblock %}
+
+{% block investor_content %}
+<h1 style="font-size:22px; margin-bottom:20px;">My Profit Share</h1>
+
+<!-- Month Filter -->
+<div style="margin-bottom:20px;">
+    <div class="filter-chips">
+        <a href="{{ url_for('investor.profit_share', month='all') }}"
+           class="chip {% if month_filter == 'all' %}active{% endif %}">All Periods</a>
+        {% for m in available_months %}
+        <a href="{{ url_for('investor.profit_share', month=m.key) }}"
+           class="chip {% if month_filter == m.key %}active{% endif %}">{{ m.label }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Hero Card -->
+<div class="card" style="padding:28px; margin-bottom:20px; background:linear-gradient(135deg, var(--ink) 0%, #2A3550 100%); color:#fff; border:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div>
+            <div style="font-size:12px; color:#9AA7BC; text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">Your Investment Ratio</div>
+            <div style="font-family:'Fraunces',serif; font-size:36px; margin-top:4px; color:var(--gold);">{{ "%.1f"|format(investment_ratio) }}%</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:12px; color:#9AA7BC; text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">Investment Amount</div>
+            <div style="font-family:'Fraunces',serif; font-size:36px; margin-top:4px;">Rs {{ "{:,.0f}".format(partner.investment_amount | float) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Derivation Box -->
+<div class="card" style="padding:20px 22px; margin-bottom:20px;">
+    <div style="font-size:13px; font-weight:700; color:var(--ink); margin-bottom:12px;">How Your Share Is Calculated</div>
+    <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; gap:12px; align-items:center; font-size:13px; flex-wrap:wrap;" class="derivation-grid">
+        <div style="background:var(--paper-alt); border-radius:8px; padding:12px 14px; text-align:center;">
+            <div style="font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Cash In</div>
+            <div style="font-family:'Fraunces',serif; font-size:16px; margin-top:4px; color:var(--cashin);">+Income</div>
+        </div>
+        <div style="color:var(--ink-faint); font-weight:700;">-</div>
+        <div style="background:var(--paper-alt); border-radius:8px; padding:12px 14px; text-align:center;">
+            <div style="font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Cash Out + Expenses</div>
+            <div style="font-family:'Fraunces',serif; font-size:16px; margin-top:4px; color:var(--cashout);">-Outflow</div>
+        </div>
+        <div style="color:var(--ink-faint); font-weight:700;">=</div>
+        <div style="background:var(--paper-alt); border-radius:8px; padding:12px 14px; text-align:center;">
+            <div style="font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Net Profit</div>
+            <div style="font-family:'Fraunces',serif; font-size:16px; margin-top:4px;">Result</div>
+        </div>
+        <div style="color:var(--ink-faint); font-weight:700;">×</div>
+        <div style="background:var(--paper-alt); border-radius:8px; padding:12px 14px; text-align:center;">
+            <div style="font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">Your Ratio</div>
+            <div style="font-family:'Fraunces',serif; font-size:16px; margin-top:4px; color:var(--gold);">{{ "%.1f"|format(investment_ratio) }}%</div>
+        </div>
+        <div style="color:var(--ink-faint); font-weight:700;">=</div>
+    </div>
+    <div style="margin-top:12px; padding:10px 14px; background:var(--ledger-tint); border-radius:8px; font-size:12px; color:var(--ledger-deep);">
+        <strong>Note:</strong> For losses, your share is always {{ "%.1f"|format(investment_ratio) }}% of the loss. For profits, a management base is deducted first (for managing owners), then the remainder is split by ratio.
+    </div>
+</div>
+
+<!-- Periods Table -->
+<div class="card" style="overflow:hidden;">
+    <table class="data-table" id="periods-table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th class="num-cell">Shop Net Profit</th>
+                <th class="num-cell">Your Share</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if periods %}
+                {% for p in periods %}
+                <tr>
+                    <td data-label="Period">{{ p.label }}</td>
+                    <td class="num-cell" data-label="Net Profit">
+                        {% if p.net_profit > 0 %}
+                            <span style="color:var(--cashin);">Rs {{ "{:,.0f}".format(p.net_profit | float) }}</span>
+                        {% elif p.net_profit < 0 %}
+                            <span style="color:var(--cashout);">- Rs {{ "{:,.0f}".format(p.net_profit | abs | float) }}</span>
+                        {% else %}
+                            Rs 0
+                        {% endif %}
+                    </td>
+                    <td class="num-cell" data-label="Your Share">
+                        {% if p.share > 0 %}
+                            <span style="color:var(--ledger-deep); font-weight:700;">Rs {{ "{:,.0f}".format(p.share | float) }}</span>
+                        {% elif p.share < 0 %}
+                            <span style="color:var(--cashout); font-weight:700;">- Rs {{ "{:,.0f}".format(p.share | abs | float) }}</span>
+                        {% else %}
+                            Rs 0
+                        {% endif %}
+                    </td>
+                    <td data-label="Status">
+                        {% if p.status == 'locked' %}
+                            <span class="badge badge-locked">Final</span>
+                        {% else %}
+                            <span class="badge badge-open">Estimate</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:40px; color:var(--ink-faint);">No periods found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+@media (max-width: 767.98px) {
+    .derivation-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+{% endblock %}

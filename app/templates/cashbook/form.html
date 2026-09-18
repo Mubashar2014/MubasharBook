@@ -1,0 +1,71 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Add Cash Entry — Mubashar's Book{% endblock %}
+{% block page_title %}Add Cash Entry{% endblock %}
+{% block page_path %}Home / Cashbook / Add{% endblock %}
+
+{% block content %}
+<div class="card card-pad" style="max-width:600px;">
+    <h3 style="margin-bottom:20px;">Add Cash Entry</h3>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <!-- Segmented Toggle for Entry Type -->
+        <div class="field">
+            {{ form.entry_type.label }}
+            <div style="display:flex;gap:0;margin-top:6px;">
+                <label style="flex:1;text-align:center;padding:10px;border:1px solid var(--rule);cursor:pointer;font-weight:600;font-size:14px;transition:0.15s;border-radius:8px 0 0 8px;
+                    {% if form.entry_type.data == 'in' %}background:var(--cashin);color:#fff;border-color:var(--cashin);{% endif %}">
+                    <input type="radio" name="entry_type" value="in" style="display:none;" {% if form.entry_type.data == 'in' %}checked{% endif %} onchange="this.checked=true;document.getElementById('type-out').checked=false;this.parentElement.style.background='var(--cashin)';this.parentElement.style.color='#fff';this.parentElement.style.borderColor='var(--cashin)';document.getElementById('type-out-label').style.background='';document.getElementById('type-out-label').style.color='';document.getElementById('type-out-label').style.borderColor='var(--rule)';">
+                    Cash In
+                </label>
+                <label id="type-out-label" style="flex:1;text-align:center;padding:10px;border:1px solid var(--rule);cursor:pointer;font-weight:600;font-size:14px;transition:0.15s;border-radius:0 8px 8px 0;border-left:none;
+                    {% if form.entry_type.data == 'out' %}background:var(--cashout);color:#fff;border-color:var(--cashout);{% endif %}">
+                    <input type="radio" name="entry_type" value="out" id="type-out" style="display:none;" {% if form.entry_type.data == 'out' %}checked{% endif %} onchange="this.checked=true;document.querySelector('input[name=entry_type][value=in]').checked=false;this.parentElement.style.background='var(--cashout)';this.parentElement.style.color='#fff';this.parentElement.style.borderColor='var(--cashout)';document.querySelector('label:has(input[name=entry_type][value=in])').style.background='';document.querySelector('label:has(input[name=entry_type][value=in])').style.color='';document.querySelector('label:has(input[name=entry_type][value=in])').style.borderColor='var(--rule)';">
+                    Cash Out
+                </label>
+            </div>
+            {% for error in form.entry_type.errors %}
+            <div style="color:var(--cashout);font-size:12px;margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="field">
+            {{ form.amount.label }}
+            {{ form.amount(placeholder="0.00", step="0.01") }}
+            {% for error in form.amount.errors %}
+            <div style="color:var(--cashout);font-size:12px;margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="field">
+            {{ form.description.label }}
+            {{ form.description(placeholder="e.g. Sold Samsung S24 to Ali") }}
+            {% for error in form.description.errors %}
+            <div style="color:var(--cashout);font-size:12px;margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="field">
+                {{ form.entry_date.label }}
+                {{ form.entry_date }}
+                {% for error in form.entry_date.errors %}
+                <div style="color:var(--cashout);font-size:12px;margin-top:4px;">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="field">
+                {{ form.linked_stock_id.label }}
+                {{ form.linked_stock_id }}
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:20px;">
+            <a href="{{ url_for('cashbook.list_entries') }}" class="btn btn-outline" style="flex:1;">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="flex:1;">Save</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

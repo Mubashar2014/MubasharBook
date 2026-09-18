@@ -1,0 +1,67 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Settings — Mubashar's Book{% endblock %}
+{% block page_title %}Shop Settings{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Settings{% endblock %}
+
+{% block content %}
+<div class="card animate-on-scroll" style="max-width:700px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="settings" style="width:22px;height:22px;color:var(--ink);"></i>
+            Shop Settings
+        </h3>
+
+        <!-- Shop Image -->
+        <div style="margin-bottom:24px;">
+            <label style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:8px;">
+                <i data-lucide="image" style="width:14px;height:14px;"></i> Shop Photo
+            </label>
+            {% if shop.shop_image %}
+            <div style="margin-bottom:12px;">
+                <img src="{{ url_for('static', filename=shop.shop_image) }}" alt="Shop photo" style="max-width:200px;border-radius:var(--radius);border:1px solid var(--rule);">
+            </div>
+            {% else %}
+            <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;">No photo uploaded yet.</p>
+            {% endif %}
+            <form method="POST" enctype="multipart/form-data" style="display:inline;">
+                <input type="file" name="shop_image" accept="image/*" style="display:none;" id="shop-image-input" onchange="this.form.submit()">
+                <button type="button" onclick="document.getElementById('shop-image-input').click()" class="btn btn-outline">
+                    <i data-lucide="upload" style="width:16px;height:16px;"></i> {% if shop.shop_image %}Change{% else %}Upload{% endif %}
+                </button>
+            </form>
+        </div>
+
+        <hr style="border-color:var(--rule);margin:24px 0;">
+
+        <!-- Shop Details -->
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="field">
+                <label><i data-lucide="store" style="width:14px;height:14px;"></i> Shop Name *</label>
+                <input type="text" name="shop_name" value="{{ shop.name }}" required>
+            </div>
+
+            <div class="field">
+                <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Total Investment (Rs) *</label>
+                <input type="number" name="initial_investment" step="0.01" min="0" value="{{ shop.initial_investment or 0 }}" required>
+                <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">This is the capital you put into the business. Profit/loss adjusts this.</div>
+            </div>
+
+            <div class="field">
+                <label><i data-lucide="image" style="width:14px;height:14px;"></i> Shop Photo</label>
+                <input type="file" name="shop_image" accept="image/*">
+                <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">JPG/PNG, max 5MB. Will be shown on dashboard.</div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i data-lucide="save" style="width:18px;height:18px;"></i> Save Changes
+                </button>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

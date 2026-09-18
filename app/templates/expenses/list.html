@@ -1,0 +1,57 @@
+{% extends "app_layout.html" %}
+{% block title %}Expenses — Mubashar's Book{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+{% block page_path %}Home / Expenses{% endblock %}
+
+{% block content %}
+<div class="section-head">
+    <h3>Expenses</h3>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('expenses.list_categories') }}" class="btn btn-outline btn-sm">Categories</a>
+        <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-primary btn-sm">+ Add Expense</a>
+    </div>
+</div>
+
+<!-- Category filter chips -->
+<div class="filter-chips" style="margin-bottom:18px;">
+    <a href="{{ url_for('expenses.list_expenses') }}"
+       class="chip {% if not selected_category %}active{% endif %}">All</a>
+    {% for cat in categories %}
+    <a href="{{ url_for('expenses.list_expenses', category_id=cat.id) }}"
+       class="chip {% if selected_category == cat.id %}active{% endif %}">{{ cat.name }}</a>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td data-label="Date">{{ expense.expense_date.strftime('%d %b %Y') }}</td>
+                    <td data-label="Category">
+                        <span class="badge badge-reserved">{{ expense.category.name }}</span>
+                    </td>
+                    <td data-label="Description">{{ expense.description or '—' }}</td>
+                    <td data-label="Amount" class="num-cell">Rs {{ '{:,.0f}'.format(expense.amount|float) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:32px; color:var(--ink-faint);">
+                        No expenses recorded yet. <a href="{{ url_for('expenses.add_expense') }}" style="color:var(--ledger); font-weight:600;">Add one</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

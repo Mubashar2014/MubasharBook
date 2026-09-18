@@ -1,0 +1,224 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Shareholders — Mubashar's Book{% endblock %}
+{% block page_title %}Shareholders{% endblock %}
+{% block page_path %}Shareholders / Setup{% endblock %}
+{% block topbar_badge %}PRO{% endblock %}
+
+{% block content %}
+
+{# --- Partners --- #}
+<div class="section-head">
+    <h3>Partners</h3>
+    <button class="btn btn-primary btn-sm" onclick="openModal('addPartnerModal')">+ Add Partner</button>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-pad" style="padding: 0;">
+        {% if partners %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Partner</th>
+                    <th>Role</th>
+                    <th class="num-cell">Investment</th>
+                    <th class="num-cell">Ratio</th>
+                    <th class="num-cell">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in partners %}
+                <tr>
+                    <td data-label="Partner">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--ledger-tint); color: var(--ledger-deep); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;">
+                                {{ p.name[0]|upper }}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">{{ p.name }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Role">
+                        <span class="badge {% if p.role == 'owner' %}badge-instock{% else %}badge-reserved{% endif %}">
+                            {{ 'Owner' if p.role == 'owner' else 'Investor' }}
+                        </span>
+                    </td>
+                    <td class="num-cell" data-label="Investment">Rs {{ "{:,.0f}".format(p.investment_amount|float) }}</td>
+                    <td class="num-cell" data-label="Ratio">{{ "%.1f"|format(p.investment_ratio or 0) }}%</td>
+                    <td class="num-cell" data-label="Actions">
+                        <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                            <button class="btn btn-outline btn-sm" onclick="openModal('editPartner{{ p.id }}')">Edit</button>
+                            <form method="POST" action="{{ url_for('shareholders.delete_partner', partner_id=p.id) }}" style="display:inline;" onsubmit="return confirm('Remove this partner?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-outline btn-sm" style="color: var(--cashout); border-color: var(--cashout);">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 40px 22px; text-align: center; color: var(--ink-faint);">
+            No partners yet. Add your first partner to get started.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# --- Edit Partner Modals --- #}
+{% for p in partners %}
+<div class="modal-overlay" id="editPartner{{ p.id }}">
+    <div class="modal">
+        <div class="modal-head">
+            <h4 style="margin: 0;">Edit Partner</h4>
+            <button class="btn btn-outline btn-sm" onclick="closeModal('editPartner{{ p.id }}')">&#10005;</button>
+        </div>
+        <form method="POST" action="{{ url_for('shareholders.edit_partner', partner_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="field">
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ p.name }}" required>
+                </div>
+                <div class="field">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="owner" {% if p.role == 'owner' %}selected{% endif %}>Managing Owner</option>
+                        <option value="investor" {% if p.role == 'investor' %}selected{% endif %}>Investor</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Investment Amount (Rs)</label>
+                    <input type="number" name="investment_amount" value="{{ p.investment_amount|float|int }}" min="1" required>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('editPartner{{ p.id }}')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{# --- Split Rule Panel --- #}
+<div class="section-head">
+    <h3>Split Rule</h3>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-pad">
+        <form method="POST" action="{{ url_for('shareholders.update_split_rule') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                {# Loss Box #}
+                <div style="background: var(--cashout-tint); border-radius: 10px; padding: 18px;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--cashout); margin-bottom: 6px;">Loss Split</div>
+                    <div style="font-family: 'Fraunces', serif; font-size: 22px; color: var(--cashout); font-weight: 700;">Always by Ratio</div>
+                    <div style="font-size: 12.5px; color: var(--ink-soft); margin-top: 4px;">Loss is always split strictly by investment ratio</div>
+                </div>
+
+                {# Profit Box #}
+                <div style="background: var(--ledger-tint); border-radius: 10px; padding: 18px;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ledger); margin-bottom: 6px;">Profit Split</div>
+                    <div style="font-family: 'Fraunces', serif; font-size: 22px; color: var(--ledger-deep); font-weight: 700;">Management Base</div>
+                    <div style="font-size: 12.5px; color: var(--ink-soft); margin-top: 4px;">Percentage off top for managing owners</div>
+                </div>
+            </div>
+
+            <div class="field" style="max-width: 320px;">
+                <label>Management Base % (0–60%)</label>
+                <input type="number" name="management_base_pct" value="{{ split_rule.management_base_pct|round(1) }}" min="0" max="60" step="0.5" required
+                       style="font-size: 18px; font-weight: 700; padding: 12px 14px;">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Split Rule</button>
+        </form>
+    </div>
+</div>
+
+{# --- Live Preview --- #}
+{% if preview and preview.splits %}
+<div class="section-head">
+    <h3>Live Preview</h3>
+    <span class="badge badge-open">On Rs {{ "{:,.0f}".format(test_profit) }} profit</span>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-pad" style="padding: 0;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Partner</th>
+                    <th class="num-cell">Ratio</th>
+                    <th class="num-cell">Mgmt Base</th>
+                    <th class="num-cell">Remainder</th>
+                    <th class="num-cell">Total Share</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in preview.splits %}
+                <tr>
+                    <td data-label="Partner">
+                        <span style="font-weight: 600;">{{ s.name }}</span>
+                        <span class="badge {% if s.role == 'owner' %}badge-instock{% else %}badge-reserved{% endif %}" style="margin-left: 6px;">
+                            {{ s.role }}
+                        </span>
+                    </td>
+                    <td class="num-cell" data-label="Ratio">{{ "%.1f"|format(s.investment_ratio) }}%</td>
+                    <td class="num-cell" data-label="Mgmt Base">Rs {{ "{:,.0f}".format(s.management_base_amount|float) }}</td>
+                    <td class="num-cell" data-label="Remainder">Rs {{ "{:,.0f}".format(s.remainder_share|float) }}</td>
+                    <td class="num-cell" data-label="Total" style="font-weight: 700; color: var(--ledger-deep);">
+                        Rs {{ "{:,.0f}".format(s.share_amount|float) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# --- Action Buttons --- #}
+<div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="{{ url_for('shareholders.periods') }}" class="btn btn-gold">Go to Period Lock</a>
+</div>
+
+{# --- Add Partner Modal --- #}
+<div class="modal-overlay" id="addPartnerModal">
+    <div class="modal">
+        <div class="modal-head">
+            <h4 style="margin: 0;">Add Partner</h4>
+            <button class="btn btn-outline btn-sm" onclick="closeModal('addPartnerModal')">&#10005;</button>
+        </div>
+        <form method="POST" action="{{ url_for('shareholders.add_partner') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+                <div class="field">
+                    <label>Name</label>
+                    <input type="text" name="name" placeholder="e.g. Ahmed Raza" required>
+                </div>
+                <div class="field">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="owner">Managing Owner</option>
+                        <option value="investor">Investor</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Investment Amount (Rs)</label>
+                    <input type="number" name="investment_amount" placeholder="e.g. 500000" min="1" required>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('addPartnerModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Add Partner</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

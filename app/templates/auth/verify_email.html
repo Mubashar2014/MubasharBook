@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Verify Email — Mubashar's Book{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-split">
+        <div class="auth-visual">
+            <div class="auth-visual-content">
+                <div class="auth-brand">
+                    <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
+                        <i data-lucide="book-open" style="width:22px;height:22px;"></i>
+                    </div>
+                    <span style="font-family:var(--font-serif); font-weight:700; font-size:22px; color:#fff;">Mubashar's Book</span>
+                </div>
+                <h2>{% if success %}Email Verified!{% else %}Verify Your Email{% endif %}</h2>
+                <p>{% if success %}Your email has been verified. You can now log in and start your free trial.{% else %}Click the button in the email we sent you to verify your address.{% endif %}</p>
+            </div>
+        </div>
+        <div class="auth-form-side">
+            <div class="auth-form-card" style="text-align:center;">
+                {% if success %}
+                    <div style="width:80px;height:80px;border-radius:50%;background:var(--ledger-tint);color:var(--ledger);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                        <i data-lucide="check-circle" style="width:40px;height:40px;"></i>
+                    </div>
+                    <h1>Email Verified!</h1>
+                    <p class="auth-subtitle">Your account is ready. Start your 7-day free trial.</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-block btn-lg" style="margin-top:16px;">
+                        <i data-lucide="log-in" style="width:18px;height:18px;"></i> Log In Now
+                    </a>
+                {% else %}
+                    <div style="width:80px;height:80px;border-radius:50%;background:var(--gold-tint);color:var(--gold-deep);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                        <i data-lucide="mail" style="width:40px;height:40px;"></i>
+                    </div>
+                    <h1>Check Your Email</h1>
+                    <p class="auth-subtitle">We've sent a verification link to your email address.</p>
+                    <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="email" value="{{ email }}">
+                        <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">
+                            <i data-lucide="refresh-cw" style="width:18px;height:18px;"></i> Resend Verification Email
+                        </button>
+                    </form>
+                {% endif %}
+
+                <div class="auth-footer" style="margin-top:24px;">
+                    <a href="{{ url_for('auth.login') }}">← Back to login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-page { min-height: 100vh; display: flex; }
+.auth-split { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.auth-visual {
+    background: var(--ink);
+    color: #fff;
+    padding: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+.auth-visual::before {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: rgba(201,169,89,0.12);
+    border-radius: 50%;
+    top: -10%; right: -10%;
+    filter: blur(60px);
+}
+.auth-visual::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    background: rgba(46,89,65,0.1);
+    border-radius: 50%;
+    bottom: -5%; left: -5%;
+    filter: blur(60px).
+}
+.auth-visual-content { position: relative; z-index: 1; }
+.auth-visual h2 { font-family: var(--font-serif); font-size: 30px; margin: 32px 0 16px; }
+.auth-visual p { color: #9A9589; font-family: var(--font-sans); font-size: 15px; line-height: 1.7; margin-bottom: 32px; }
+.auth-form-side {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px; background: var(--paper);
+}
+.auth-form-card { width: 100%; max-width: 400px; }
+.auth-form-card h1 { font-family: var(--font-serif); font-size: 28px; margin-bottom: 8px; }
+.auth-subtitle { font-family: var(--font-sans); color: var(--ink-faint); margin-bottom: 28px; font-size: 15px; }
+.auth-footer {
+    text-align: center; margin-top: 24px;
+    font-family: var(--font-sans); font-size: 14px; color: var(--ink-faint);
+}
+.auth-footer a { color: var(--ledger); font-weight: 600; }
+.auth-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 991.98px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .auth-visual { display: none; }
+    .auth-form-side { padding: 24px; }
+}
+</style>
+{% endblock %}

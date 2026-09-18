@@ -1,0 +1,65 @@
+{% extends "app_layout.html" %}
+{% block title %}Add Expense — Mubashar's Book{% endblock %}
+{% block page_title %}Add Expense{% endblock %}
+{% block page_path %}Home / Expenses / Add{% endblock %}
+
+{% block content %}
+<div class="card card-pad" style="max-width:540px;">
+    <h3 style="margin-bottom:18px;">New Expense</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div style="padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13.5px;
+                    {% if category == 'success' %}background:var(--ledger-tint); color:var(--ledger-deep);
+                    {% elif category == 'danger' %}background:var(--cashout-tint); color:var(--cashout);
+                    {% elif category == 'warning' %}background:var(--gold-tint); color:#8A6A1E;
+                    {% else %}background:#EDEFF3; color:var(--ink-soft);{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="field">
+            <label for="category_id">Category</label>
+            {{ form.category_id(id="category_id") }}
+            {% for error in form.category_id.errors %}
+                <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="field">
+            <label for="amount">Amount (Rs)</label>
+            {{ form.amount(id="amount", placeholder="e.g. 25000") }}
+            {% for error in form.amount.errors %}
+                <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="field">
+            <label for="description">Description</label>
+            {{ form.description(id="description", placeholder="e.g. Office electricity bill") }}
+            {% for error in form.description.errors %}
+                <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="field">
+            <label for="expense_date">Date</label>
+            {{ form.expense_date(id="expense_date") }}
+            {% for error in form.expense_date.errors %}
+                <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline" style="flex:1;">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="flex:1;">Save Expense</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

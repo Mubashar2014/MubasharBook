@@ -1,0 +1,259 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Dashboard — Mubashar's Book{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / {{ today.strftime('%d %b %Y') }}{% endblock %}
+
+{% block topbar_badge %}
+    <i data-lucide="crown" style="width:12px;height:12px;"></i>
+    {% if current_user.is_premium %}
+        Premium
+    {% elif trial_active and trial_days_left is not none %}
+        Trial: {{ trial_days_left }} day{{ 's' if trial_days_left != 1 }} left
+    {% elif not trial_active %}
+        Expired
+    {% else %}
+        Free Trial
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Total Capital Card -->
+<div class="card animate-on-scroll" style="margin-bottom:24px;background:linear-gradient(135deg,var(--ink),#1E293B);color:#fff;border:none;">
+    <div class="card-pad">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div>
+                <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Total Capital</div>
+                <div style="font-size:14px;color:#94A3B8;margin-top:4px;">Investment + Profit − Withdrawals</div>
+            </div>
+            <a href="{{ url_for('main.settings') }}" class="btn btn-ghost" style="color:#94A3B8;border-color:#334155;font-size:13px;padding:6px 12px;">
+                <i data-lucide="settings" style="width:16px;height:16px;"></i> Edit
+            </a>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.05);border-radius:var(--radius);">
+                <div style="font-family:var(--font-sans);font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Investment</div>
+                <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-top:4px;">Rs {{ "{:,.0f}".format(initial_investment) }}</div>
+            </div>
+            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.05);border-radius:var(--radius);">
+                <div style="font-family:var(--font-sans);font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Profit/Loss</div>
+                <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-top:4px;{% if cumulative_profit >= 0 %}color:#4ADE80{% else %}color:#F87171{% endif %};">
+                    {% if cumulative_profit >= 0 %}+{% endif %}Rs {{ "{:,.0f}".format(cumulative_profit) }}
+                </div>
+            </div>
+            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.05);border-radius:var(--radius);">
+                <div style="font-family:var(--font-sans);font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Withdrawals</div>
+                <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-top:4px;color:#F87171;">-Rs {{ "{:,.0f}".format(total_expenses) }}</div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #334155;">
+            <div style="font-family:var(--font-sans);font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Total Capital</div>
+            <div style="font-family:var(--font-serif);font-size:32px;font-weight:700;margin-top:4px;{% if total_capital >= 0 %}color:#4ADE80{% else %}color:#F87171{% endif %};">
+                Rs {{ "{:,.0f}".format(total_capital) }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Where Money Is -->
+<div class="stat-grid animate-on-scroll" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Cash in Hand</div>
+            <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="wallet" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v pos num">Rs {{ "{:,.0f}".format(cash_in_hand) }}</div>
+        <div class="delta"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Available now</div>
+    </div>
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Invested in Stock</div>
+            <div class="stat-icon" style="background:var(--gold-tint);color:var(--gold-deep);"><i data-lucide="package" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v num">Rs {{ "{:,.0f}".format(stock_value) }}</div>
+        <div class="delta"><i data-lucide="box" style="width:12px;height:12px;"></i> Unsold inventory cost</div>
+    </div>
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Pending from Customers</div>
+            <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="user-plus" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v pos num">Rs {{ "{:,.0f}".format(pending_receivable) }}</div>
+        <div class="delta"><i data-lucide="users" style="width:12px;height:12px;"></i> Receivables</div>
+    </div>
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Pending to Suppliers</div>
+            <div class="stat-icon" style="background:var(--cashout-tint);color:var(--cashout);"><i data-lucide="truck" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v neg num">Rs {{ "{:,.0f}".format(pending_payable) }}</div>
+        <div class="delta"><i data-lucide="truck" style="width:12px;height:12px;"></i> Payables</div>
+    </div>
+</div>
+
+<!-- Today's Activity -->
+<div class="stat-grid animate-on-scroll" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Today's Net</div>
+            <div class="stat-icon" style="background:{% if today_net >= 0 %}var(--ledger-tint){% else %}var(--cashout-tint){% endif %};color:{% if today_net >= 0 %}var(--ledger){% else %}var(--cashout){% endif %};">
+                <i data-lucide="activity" style="width:18px;height:18px;"></i>
+            </div>
+        </div>
+        <div class="v {% if today_net >= 0 %}pos{% endif %} num">Rs {{ "{:,.0f}".format(today_net) }}</div>
+        <div class="delta">In − Out − Expenses</div>
+    </div>
+    <div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Today's Sales</div>
+            <div class="stat-icon" style="background:var(--gold-tint);color:var(--gold-deep);"><i data-lucide="shopping-cart" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v pos num">Rs {{ "{:,.0f}".format(today_sales) }}</div>
+        <div class="delta"><i data-lucide="calendar" style="width:12px;height:12px;"></i> {{ today.strftime('%d %b %Y') }}</div>
+    </div>
+</div>
+
+<!-- Monthly P&L -->
+<div class="card animate-on-scroll" style="margin-bottom:24px;">
+    <div class="card-pad">
+        <div class="section-head">
+            <h3 style="display:flex;align-items:center;gap:10px;font-family:var(--font-serif);font-size:18px;">
+                <i data-lucide="trending-up" style="width:20px;height:20px;color:var(--ink-faint);"></i>
+                This Month P&L
+            </h3>
+            <span style="font-size:13px;color:var(--ink-faint);">{{ today.replace(day=1).strftime('%B %Y') }}</span>
+        </div>
+
+        <div class="stat-grid" style="margin-bottom:16px;">
+            <div class="stat-card">
+                <div class="l">Revenue (Sold Phones)</div>
+                <div class="v pos num">Rs {{ "{:,.0f}".format(month_revenue) }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="l">Cost of Sold Phones</div>
+                <div class="v neg num">Rs {{ "{:,.0f}".format(month_cogs) }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="l">Expenses</div>
+                <div class="v neg num">Rs {{ "{:,.0f}".format(month_expenses or 0) }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="l">Net P&L</div>
+                <div class="v {% if monthly_pnl >= 0 %}pos{% endif %} num">Rs {{ "{:,.0f}".format(monthly_pnl) }}</div>
+            </div>
+        </div>
+
+        <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:16px;">
+            <div style="font-family:var(--font-sans);font-size:12px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                <i data-lucide="pie-chart" style="width:14px;height:14px;"></i> Profit Breakdown
+            </div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+                <div style="text-align:center;flex:1;min-width:120px;">
+                    <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--ledger);">Rs {{ "{:,.0f}".format(month_profit_received or 0) }}</div>
+                    <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">Received Profit</div>
+                </div>
+                <div style="text-align:center;flex:1;min-width:120px;">
+                    <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--gold-deep);">Rs {{ "{:,.0f}".format(month_profit_pending or 0) }}</div>
+                    <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">Pending Profit</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-row animate-on-scroll">
+    <a href="{{ url_for('stock.stock_in') }}" class="btn btn-primary">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Buy Stock
+    </a>
+    <a href="{{ url_for('cashbook.list_entries') }}" class="btn btn-gold">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Cash Entry
+    </a>
+    <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Expense
+    </a>
+    <a href="{{ url_for('main.settings') }}" class="btn btn-outline">
+        <i data-lucide="settings" style="width:16px;height:16px;"></i> Settings
+    </a>
+</div>
+
+<!-- Read-only banner -->
+{% if current_user.is_read_only %}
+<div class="animate-on-scroll" style="background:var(--cashout-tint); border:1px solid var(--cashout); border-radius:var(--radius-lg); padding:18px 24px; margin-bottom:24px; display:flex; align-items:center; gap:16px;">
+    <div style="width:44px; height:44px; border-radius:12px; background:var(--cashout); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i data-lucide="alert-triangle" style="width:22px;height:22px;"></i>
+    </div>
+    <div>
+        <div style="font-family:var(--font-sans); font-weight:700; font-size:15px; color:var(--cashout);">Your trial has expired</div>
+        <div style="font-family:var(--font-sans); font-size:13.5px; color:var(--ink-soft); margin-top:2px;">You can view data but cannot make changes. Subscribe to continue editing.</div>
+    </div>
+    <a href="#" class="btn btn-gold btn-sm" style="margin-left:auto; white-space:nowrap;">
+        <i data-lucide="credit-card" style="width:14px;height:14px;"></i> Subscribe Now
+    </a>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+<div class="card animate-on-scroll">
+    <div class="card-pad">
+        <div class="section-head">
+            <h3 style="display:flex; align-items:center; gap:10px; font-family:var(--font-serif); font-size:18px;">
+                <i data-lucide="activity" style="width:20px;height:20px;color:var(--ink-faint);"></i>
+                Recent Activity
+            </h3>
+            <a href="{{ url_for('cashbook.list_entries') }}" class="btn btn-outline btn-sm">
+                <i data-lucide="arrow-right" style="width:14px;height:14px;"></i> View All
+            </a>
+        </div>
+
+        {% if recent_entries %}
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Date</th>
+                        <th><i data-lucide="file-text" style="width:12px;height:12px;"></i> Description</th>
+                        <th><i data-lucide="tag" style="width:12px;height:12px;"></i> Type</th>
+                        <th class="num"><i data-lucide="hash" style="width:12px;height:12px;"></i> Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in recent_entries %}
+                    <tr>
+                        <td style="white-space:nowrap;">
+                            <i data-lucide="calendar" style="width:13px;height:13px;color:var(--ink-faint);margin-right:4px;"></i>
+                            {{ entry.entry_date.strftime('%d %b') }}
+                        </td>
+                        <td style="font-weight:500;">{{ entry.description }}</td>
+                        <td>
+                            {% if entry.entry_type == 'in' %}
+                                <span class="badge badge-instock"><i data-lucide="arrow-down-left" style="width:11px;height:11px;"></i> Cash In</span>
+                            {% else %}
+                                <span class="badge badge-sold"><i data-lucide="arrow-up-right" style="width:11px;height:11px;"></i> Cash Out</span>
+                            {% endif %}
+                        </td>
+                        <td class="num" style="font-weight:700; {% if entry.entry_type == 'in' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
+                            {% if entry.entry_type == 'in' %}+{% else %}-{% endif %} Rs {{ "{:,.0f}".format(entry.amount|float) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="inbox" style="width:40px;height:40px;"></i></div>
+            <div class="empty-title">No activity yet</div>
+            <div class="empty-desc">Start by adding your first stock purchase or cash entry.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.quick-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.section-head {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+}
+</style>
+{% endblock %}

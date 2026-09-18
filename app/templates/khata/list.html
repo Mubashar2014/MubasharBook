@@ -1,0 +1,121 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Khata — Mubashar's Book{% endblock %}
+{% block page_title %}Khata{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Khata{% endblock %}
+
+{% block topbar_badge %}
+    <i data-lucide="clipboard-list" style="width:12px;height:12px;"></i> Pending: Rs {{ "{:,.0f}".format(total_receivable + total_payable) }}
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stat-grid">
+    <div class="stat-card animate-on-scroll delay-1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Hum Par Haq Hai (Receivable)</div>
+            <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v pos num">Rs {{ "{:,.0f}".format(total_receivable) }}</div>
+        <div class="delta">Customers who owe us</div>
+    </div>
+    <div class="stat-card animate-on-scroll delay-2">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="l">Hum Par Ada Karna Hai (Payable)</div>
+            <div class="stat-icon" style="background:var(--cashout-tint);color:var(--cashout);"><i data-lucide="trending-down" style="width:18px;height:18px;"></i></div>
+        </div>
+        <div class="v neg num">Rs {{ "{:,.0f}".format(total_payable) }}</div>
+        <div class="delta">Suppliers we owe</div>
+    </div>
+</div>
+
+<!-- Parties who owe us -->
+<div class="card animate-on-scroll" style="margin-bottom:20px;">
+    <div class="card-pad">
+        <div class="section-head">
+            <h3 style="display:flex;align-items:center;gap:10px;">
+                <i data-lucide="users" style="width:20px;height:20px;color:var(--cashin);"></i>
+                Hum Par Haq Hai
+            </h3>
+            <span style="font-size:13px;color:var(--ink-faint);">Customers with pending payments</span>
+        </div>
+
+        {% set receivable_parties = [] %}
+        {% for p in party_summary if p.entry_type == 'receivable' %}
+            {% if receivable_parties.append(p) %}{% endif %}
+        {% endfor %}
+
+        {% if receivable_parties %}
+        <div style="display:grid;gap:10px;">
+            {% for p in receivable_parties %}
+            <a href="{{ url_for('khata.party_detail', party_name=p.party_name) }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);transition:all 0.15s ease;text-decoration:none;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--ledger-tint);color:var(--ledger);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;">
+                        {{ p.party_name[0] | upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:15px;color:var(--ink);">{{ p.party_name }}</div>
+                        <div style="font-size:12px;color:var(--ink-faint);">{{ p.entry_count }} pending transaction{{ 's' if p.entry_count != 1 }}</div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;color:var(--cashin);">Rs {{ "{:,.0f}".format(p.pending_amount|float) }}</div>
+                    <div style="font-size:11px;color:var(--ink-faint);">owes us</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <div class="empty-icon"><i data-lucide="check-circle" style="width:32px;height:32px;"></i></div>
+            <div class="empty-title">No pending receivables</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Parties we owe -->
+<div class="card animate-on-scroll">
+    <div class="card-pad">
+        <div class="section-head">
+            <h3 style="display:flex;align-items:center;gap:10px;">
+                <i data-lucide="users" style="width:20px;height:20px;color:var(--cashout);"></i>
+                Hum Par Ada Karna Hai
+            </h3>
+            <span style="font-size:13px;color:var(--ink-faint);">Suppliers with pending payments</span>
+        </div>
+
+        {% set payable_parties = [] %}
+        {% for p in party_summary if p.entry_type == 'payable' %}
+            {% if payable_parties.append(p) %}{% endif %}
+        {% endfor %}
+
+        {% if payable_parties %}
+        <div style="display:grid;gap:10px;">
+            {% for p in payable_parties %}
+            <a href="{{ url_for('khata.party_detail', party_name=p.party_name) }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);transition:all 0.15s ease;text-decoration:none;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--cashout-tint);color:var(--cashout);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;">
+                        {{ p.party_name[0] | upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:15px;color:var(--ink);">{{ p.party_name }}</div>
+                        <div style="font-size:12px;color:var(--ink-faint);">{{ p.entry_count }} pending transaction{{ 's' if p.entry_count != 1 }}</div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;color:var(--cashout);">Rs {{ "{:,.0f}".format(p.pending_amount|float) }}</div>
+                    <div style="font-size:11px;color:var(--ink-faint);">we owe</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <div class="empty-icon"><i data-lucide="check-circle" style="width:32px;height:32px;"></i></div>
+            <div class="empty-title">No pending payables</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

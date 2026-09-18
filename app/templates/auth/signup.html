@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Sign up — Mubashar's Book{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-split">
+        <div class="auth-visual">
+            <div class="auth-visual-content">
+                <div class="auth-brand">
+                    <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
+                        <i data-lucide="book-open" style="width:22px;height:22px;"></i>
+                    </div>
+                    <span style="font-family:var(--font-serif); font-weight:700; font-size:22px; color:#fff;">Mubashar's Book</span>
+                </div>
+                <h2>Start your free trial today</h2>
+                <p>7 days ka free trial. Card nahi chahiye. Setup sirf 10 minute mein.</p>
+                <div class="auth-visual-features">
+                    <div class="auth-feature-item"><i data-lucide="zap" style="width:18px;height:18px;color:var(--gold);"></i> 7-day free trial — no card</div>
+                    <div class="auth-feature-item"><i data-lucide="smartphone" style="width:18px;height:18px;color:var(--gold);"></i> Mobile-friendly design</div>
+                    <div class="auth-feature-item"><i data-lucide="lock" style="width:18px;height:18px;color:var(--gold);"></i> Data stays yours — no sharing</div>
+                </div>
+            </div>
+        </div>
+        <div class="auth-form-side">
+            <div class="auth-form-card">
+                <h1>Create your account</h1>
+                <p class="auth-subtitle">7-day free trial starts now</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="auth-alert" style="{% if category == 'warning' %}background:var(--gold-tint);color:#8A6A1E;border:1px solid var(--gold);{% elif category == 'danger' %}{% endif %}">
+                    <i data-lucide="{% if category == 'warning' %}alert-triangle{% elif category == 'danger' %}x-circle{% else %}info{% endif %}" style="width:16px;height:16px;"></i> {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.signup') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="field">
+                        <label><i data-lucide="user" style="width:14px;height:14px;"></i> Your name *</label>
+                        <input type="text" name="owner_name" placeholder="e.g. Muhammad Ahmed" required>
+                    </div>
+                    <div class="field">
+                        <label><i data-lucide="phone" style="width:14px;height:14px;"></i> Phone number *</label>
+                        <input type="tel" name="phone" placeholder="03XX XXXXXXX" required>
+                    </div>
+                    <div class="field">
+                        <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Password *</label>
+                        <input type="password" name="password" placeholder="Min 6 characters" required minlength="6">
+                    </div>
+
+                    <div style="border-top:1px solid var(--rule);margin:20px 0;padding-top:20px;">
+                        <div style="font-family:var(--font-serif);font-size:15px;font-weight:600;margin-bottom:16px;color:var(--ink);">Shop Details</div>
+                        <div class="field">
+                            <label><i data-lucide="store" style="width:14px;height:14px;"></i> Shop name</label>
+                            <input type="text" name="shop_name" placeholder="Leave blank to use your name">
+                        </div>
+                        <div class="field">
+                            <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Total investment (Rs) *</label>
+                            <input type="number" name="total_investment" placeholder="How much capital you're putting in" required min="0" step="1000">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="language" value="ur">
+                    <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top:8px;">
+                        <i data-lucide="rocket" style="width:18px;height:18px;"></i> Create Account & Start Free Trial
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-page { min-height: 100vh; display: flex; }
+.auth-split { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.auth-visual {
+    background: var(--ink);
+    color: #fff;
+    padding: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+.auth-visual::before {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: rgba(201,169,89,0.12);
+    border-radius: 50%;
+    top: -10%; right: -10%;
+    filter: blur(60px);
+}
+.auth-visual::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    background: rgba(46,89,65,0.1);
+    border-radius: 50%;
+    bottom: -5%; left: -5%;
+    filter: blur(60px);
+}
+.auth-visual-content { position: relative; z-index: 1; }
+.auth-visual h2 { font-family: var(--font-serif); font-size: 30px; margin: 32px 0 16px; }
+.auth-visual p { color: #9A9589; font-family: var(--font-sans); font-size: 15px; line-height: 1.7; margin-bottom: 32px; }
+.auth-visual-features { display: flex; flex-direction: column; gap: 12px; }
+.auth-feature-item { display: flex; align-items: center; gap: 10px; font-family: var(--font-sans); font-size: 14px; color: #DDD4B8; }
+.auth-form-side {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px; background: var(--paper);
+    overflow-y: auto;
+    max-height: 100vh;
+}
+.auth-form-card { width: 100%; max-width: 420px; }
+.auth-form-card h1 { font-family: var(--font-serif); font-size: 28px; margin-bottom: 8px; }
+.auth-subtitle { font-family: var(--font-sans); color: var(--ink-faint); margin-bottom: 24px; font-size: 15px; }
+.auth-alert {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--cashout-tint); color: var(--cashout);
+    padding: 12px 16px; border-radius: var(--radius);
+    margin-bottom: 16px; font-family: var(--font-sans);
+    font-size: 13.5px; font-weight: 500;
+}
+.auth-footer {
+    text-align: center; margin-top: 20px;
+    font-family: var(--font-sans); font-size: 14px; color: var(--ink-faint);
+}
+.auth-footer a { color: var(--ledger); font-weight: 600; }
+.auth-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 991.98px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .auth-visual { display: none; }
+    .auth-form-side { padding: 24px; max-height: none; }
+}
+</style>
+{% endblock %}

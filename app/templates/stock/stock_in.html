@@ -1,0 +1,116 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Add Stock — Mubashar's Book{% endblock %}
+{% block page_title %}{{ 'Edit Stock' if action == 'Edit' else 'Add Stock (Buy)' }}{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock / {{ 'Edit' if action == 'Edit' else 'Buy' }}{% endblock %}
+
+{% block content %}
+<div class="card animate-on-scroll" style="max-width:700px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="{% if action == 'Edit' %}pencil{% else %}plus-circle{% endif %}" style="width:22px;height:22px;color:var(--ledger);"></i>
+            {{ 'Edit Stock' if action == 'Edit' else 'Add New Stock (Buy)' }}
+        </h3>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Phone Details -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field" style="grid-column:1/2;">
+                    <label><i data-lucide="smartphone" style="width:14px;height:14px;"></i> Phone Model *</label>
+                    {{ form.model_name(placeholder="e.g. Samsung A15, iPhone 13") }}
+                </div>
+                <div class="field">
+                    <label><i data-lucide="hash" style="width:14px;height:14px;"></i> IMEI</label>
+                    {{ form.imei(placeholder="Optional") }}
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                <div class="field">
+                    <label><i data-lucide="layers" style="width:14px;height:14px;"></i> Quantity *</label>
+                    {{ form.quantity(id='qty', oninput='calcPending()') }}
+                </div>
+                <div class="field">
+                    <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Cost Price (Rs) *</label>
+                    {{ form.cost_price(id='cost', oninput='calcPending()') }}
+                </div>
+                <div class="field">
+                    <label><i data-lucide="calendar" style="width:14px;height:14px;"></i> Purchase Date *</label>
+                    {{ form.purchase_date() }}
+                </div>
+            </div>
+
+            <!-- Supplier -->
+            <div class="field">
+                <label><i data-lucide="truck" style="width:14px;height:14px;"></i> Supplier Name <span style="color:var(--cashout);font-size:11px;">required if pending</span></label>
+                {{ form.supplier_name(placeholder="Type supplier name to track in khata, or leave blank for full cash purchase") }}
+            </div>
+
+            <!-- Payment -->
+            <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+                <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="wallet" style="width:16px;height:16px;"></i> Payment to Supplier
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="field">
+                        <label>Paid Now (Rs)</label>
+                        {{ form.purchase_paid(id='paid', oninput='calcPending()') }}
+                    </div>
+                    <div class="field">
+                        <label style="color:var(--cashout);">Pending</label>
+                        <div id="pending-display" style="padding:12px 14px;background:var(--cashout-tint);border:1px solid var(--rule);border-radius:var(--radius);font-family:var(--font-sans);font-size:14px;color:var(--cashout);font-weight:600;min-height:46px;">
+                            Rs 0
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extra Expenses -->
+            <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:24px;">
+                <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="receipt" style="width:16px;height:16px;"></i> Extra Expenses (optional)
+                </div>
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+                    <div class="field">
+                        <label>Description</label>
+                        {{ form.purchase_expense_desc(placeholder="e.g. Transport, customs, technician check") }}
+                    </div>
+                    <div class="field">
+                        <label>Amount (Rs)</label>
+                        {{ form.purchase_expense_amount(placeholder="0") }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i data-lucide="check-circle" style="width:18px;height:18px;"></i> {{ 'Update Stock' if action == 'Edit' else 'Save Stock' }}
+                </button>
+                <a href="{{ url_for('stock.list_stock') }}" class="btn btn-outline btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function calcPending() {
+    var qty = parseFloat(document.getElementById('qty').value) || 0;
+    var cost = parseFloat(document.getElementById('cost').value) || 0;
+    var paid = parseFloat(document.getElementById('paid').value) || 0;
+    var total = qty * cost;
+    var pending = total - paid;
+    var el = document.getElementById('pending-display');
+    if (pending > 0) {
+        el.style.background = 'var(--cashout-tint)';
+        el.style.color = 'var(--cashout)';
+        el.textContent = 'Rs ' + pending.toLocaleString('en-IN');
+    } else {
+        el.style.background = 'var(--ledger-tint)';
+        el.style.color = 'var(--cashin)';
+        el.textContent = pending < 0 ? 'Rs ' + pending.toLocaleString('en-IN') + ' (overpaid)' : 'Rs 0';
+    }
+}
+</script>
+{% endblock %}

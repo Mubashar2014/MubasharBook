@@ -1,0 +1,119 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Sell Stock — Mubashar's Book{% endblock %}
+{% block page_title %}Sell: {{ item.model_name }}{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock / Sell{% endblock %}
+
+{% block content %}
+<!-- Item summary -->
+<div class="card animate-on-scroll" style="max-width:700px;margin-bottom:20px;">
+    <div class="card-pad" style="display:flex;align-items:center;gap:16px;">
+        <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);width:48px;height:48px;">
+            <i data-lucide="smartphone" style="width:22px;height:22px;"></i>
+        </div>
+        <div style="flex:1;">
+            <div style="font-family:var(--font-serif);font-size:18px;font-weight:600;">{{ item.model_name }}</div>
+            <div style="font-size:13px;color:var(--ink-faint);display:flex;gap:16px;margin-top:4px;">
+                <span><i data-lucide="hash" style="width:12px;height:12px;"></i> {{ item.imei or 'No IMEI' }}</span>
+                <span><i data-lucide="layers" style="width:12px;height:12px;"></i> Qty: {{ item.quantity }}</span>
+                <span><i data-lucide="banknote" style="width:12px;height:12px;"></i> Cost: Rs {{ "{:,.0f}".format(item.cost_price|float) }}</span>
+            </div>
+        </div>
+        <span class="badge badge-instock"><i data-lucide="package" style="width:10px;height:10px;"></i> In Stock</span>
+    </div>
+</div>
+
+<!-- Sell Form -->
+<div class="card animate-on-scroll" style="max-width:700px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="shopping-cart" style="width:22px;height:22px;color:var(--gold);"></i>
+            Sell This Phone
+        </h3>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="field">
+                    <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Selling Price (Rs) *</label>
+                    {{ form.sale_price(id='sale_price', oninput='calcPending()') }}
+                </div>
+                <div class="field">
+                    <label><i data-lucide="calendar" style="width:14px;height:14px;"></i> Sale Date *</label>
+                    {{ form.sale_date() }}
+                </div>
+            </div>
+
+            <!-- Customer -->
+            <div class="field">
+                <label><i data-lucide="user" style="width:14px;height:14px;"></i> Customer Name <span style="color:var(--cashout);font-size:11px;">required if pending</span></label>
+                {{ form.customer_name(placeholder="Type customer name to track in khata, or leave blank for full cash sale") }}
+            </div>
+
+            <!-- Payment -->
+            <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+                <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="wallet" style="width:16px;height:16px;"></i> Payment from Customer
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="field">
+                        <label>Received Now (Rs)</label>
+                        {{ form.sale_received(id='received', oninput='calcPending()') }}
+                    </div>
+                    <div class="field">
+                        <label style="color:var(--cashin);">Pending</label>
+                        <div id="pending-display" style="padding:12px 14px;background:var(--ledger-tint);border:1px solid var(--rule);border-radius:var(--radius);font-family:var(--font-sans);font-size:14px;color:var(--cashin);font-weight:600;min-height:46px;">
+                            Rs 0
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extra Expenses -->
+            <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:24px;">
+                <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="receipt" style="width:16px;height:16px;"></i> Extra Expenses (optional)
+                </div>
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+                    <div class="field">
+                        <label>Description</label>
+                        {{ form.sale_expense_desc(placeholder="e.g. Gift cover, delivery, screen protector") }}
+                    </div>
+                    <div class="field">
+                        <label>Amount (Rs)</label>
+                        {{ form.sale_expense_amount(placeholder="0") }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;">
+                <button type="submit" class="btn btn-gold btn-lg">
+                    <i data-lucide="check-circle" style="width:18px;height:18px;"></i> Confirm Sale
+                </button>
+                <a href="{{ url_for('stock.list_stock') }}" class="btn btn-outline btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function calcPending() {
+    var salePrice = parseFloat(document.getElementById('sale_price').value) || 0;
+    var received = parseFloat(document.getElementById('received').value) || 0;
+    var qty = {{ item.quantity }};
+    var total = salePrice * qty;
+    var pending = total - received;
+    var el = document.getElementById('pending-display');
+    if (pending > 0) {
+        el.style.background = 'var(--ledger-tint)';
+        el.style.color = 'var(--cashin)';
+        el.textContent = 'Rs ' + pending.toLocaleString('en-IN');
+    } else {
+        el.style.background = 'var(--cashout-tint)';
+        el.style.color = 'var(--cashout)';
+        el.textContent = pending < 0 ? 'Rs ' + Math.abs(pending).toLocaleString('en-IN') + ' (extra paid)' : 'Rs 0';
+    }
+}
+</script>
+{% endblock %}

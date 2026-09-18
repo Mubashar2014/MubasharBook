@@ -1,0 +1,53 @@
+{% extends "investor_layout.html" %}
+{% block title %}My Phones — Investor Portal{% endblock %}
+
+{% block investor_content %}
+<h1 style="font-size:22px; margin-bottom:20px;">My Funded Phones</h1>
+
+<div class="card" style="padding:18px 22px; margin-bottom:20px; background:var(--gold-tint); border:1px solid var(--gold);">
+    <div style="font-size:13px; color:#8A6A1E;">
+        <strong>Investment:</strong> Rs {{ "{:,.0f}".format(partner.investment_amount | float) }} — {{ "%.1f"|format(partner.investment_ratio) }}% share
+    </div>
+</div>
+
+<div class="card" style="overflow:hidden;">
+    <table class="data-table" id="phones-table">
+        <thead>
+            <tr>
+                <th>Model</th>
+                <th>IMEI</th>
+                <th class="num-cell">Cost Price</th>
+                <th class="num-cell">Sale Price</th>
+                <th>Status</th>
+                <th>Added</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if phones %}
+                {% for phone in phones %}
+                <tr>
+                    <td data-label="Model" style="font-weight:600;">{{ phone.model_name }}</td>
+                    <td data-label="IMEI" style="font-family:monospace; font-size:12px; color:var(--ink-faint);">{{ phone.imei or '—' }}</td>
+                    <td class="num-cell" data-label="Cost Price">Rs {{ "{:,.0f}".format(phone.cost_price | float) }}</td>
+                    <td class="num-cell" data-label="Sale Price">Rs {{ "{:,.0f}".format(phone.sale_price | float) }}</td>
+                    <td data-label="Status">
+                        {% if phone.status == 'in_stock' %}
+                            <span class="badge badge-instock">In Stock</span>
+                        {% elif phone.status == 'sold' %}
+                            <span class="badge badge-sold">Sold</span>
+                        {% elif phone.status == 'reserved' %}
+                            <span class="badge badge-reserved">Reserved</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Added" style="font-size:12px; color:var(--ink-faint);">{{ phone.created_at.strftime('%d %b %Y') }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; padding:40px; color:var(--ink-faint);">No phones funded by your investment yet.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

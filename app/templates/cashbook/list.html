@@ -1,0 +1,77 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Cashbook — Mubashar's Book{% endblock %}
+{% block page_title %}Cashbook{% endblock %}
+{% block page_path %}Home / Cashbook{% endblock %}
+
+{% block content %}
+<!-- Filters & Actions -->
+<div class="section-head">
+    <div class="filter-chips">
+        <a href="{{ url_for('cashbook.list_entries', period='all') }}" class="chip {% if period == 'all' %}active{% endif %}">All</a>
+        <a href="{{ url_for('cashbook.list_entries', period='today') }}" class="chip {% if period == 'today' %}active{% endif %}">Today</a>
+        <a href="{{ url_for('cashbook.list_entries', period='week') }}" class="chip {% if period == 'week' %}active{% endif %}">This Week</a>
+        <a href="{{ url_for('cashbook.list_entries', period='month') }}" class="chip {% if period == 'month' %}active{% endif %}">This Month</a>
+    </div>
+    <a href="{{ url_for('cashbook.add_entry') }}" class="btn btn-primary">+ Add Entry</a>
+</div>
+
+<!-- Ledger Table -->
+<div class="card card-pad" style="overflow-x:auto;">
+    {% if entries %}
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th class="num">Cash In</th>
+                <th class="num">Cash Out</th>
+                <th class="num">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td data-label="Date">{{ entry.entry_date.strftime('%d %b %Y') }}</td>
+                <td data-label="Description">
+                    {{ entry.description }}
+                    {% if entry.linked_stock_id %}
+                    <br><span style="font-size:11px;color:var(--ink-faint);">Linked stock #{{ entry.linked_stock_id }}</span>
+                    {% endif %}
+                </td>
+                <td data-label="Cash In" class="num">
+                    {% if entry.entry_type == 'in' %}
+                    <span style="color:var(--cashin);">+{{ 'Rs {:,.0f}'.format(entry.amount | float) }}</span>
+                    {% else %}
+                    <span style="color:var(--ink-faint);">—</span>
+                    {% endif %}
+                </td>
+                <td data-label="Cash Out" class="num">
+                    {% if entry.entry_type == 'out' %}
+                    <span style="color:var(--cashout);">-{{ 'Rs {:,.0f}'.format(entry.amount | float) }}</span>
+                    {% else %}
+                    <span style="color:var(--ink-faint);">—</span>
+                    {% endif %}
+                </td>
+                <td data-label="Balance" class="num"><strong>{{ 'Rs {:,.0f}'.format(entry.balance_after | float) if entry.balance_after else 'Rs 0' }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="border-top:3px double var(--ink);font-weight:700;">
+                <td colspan="2">Subtotals</td>
+                <td class="num" style="color:var(--cashin);">+{{ 'Rs {:,.0f}'.format(subtotal_in) }}</td>
+                <td class="num" style="color:var(--cashout);">-{{ 'Rs {:,.0f}'.format(subtotal_out) }}</td>
+                <td class="num"></td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:40px 0;color:var(--ink-faint);">
+        <div style="font-size:40px;margin-bottom:12px;">📒</div>
+        <p>No cash entries yet.</p>
+        <a href="{{ url_for('cashbook.add_entry') }}" class="btn btn-primary btn-sm">+ Add First Entry</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

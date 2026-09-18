@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="app-shell">
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
+                <i data-lucide="book-open" style="width:20px;height:20px;"></i>
+            </div>
+            <div class="brand-name">Mubashar's Book</div>
+        </div>
+        <a class="side-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+            <span class="ic"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span> Dashboard
+        </a>
+        <a class="side-link {% if request.endpoint == 'stock.list_stock' %}active{% endif %}" href="{{ url_for('stock.list_stock') }}">
+            <span class="ic"><i data-lucide="smartphone" style="width:18px;height:18px;"></i></span> Stock
+        </a>
+        <a class="side-link {% if request.endpoint == 'cashbook.list_entries' %}active{% endif %}" href="{{ url_for('cashbook.list_entries') }}">
+            <span class="ic"><i data-lucide="banknote" style="width:18px;height:18px;"></i></span> Cashbook
+        </a>
+        <a class="side-link {% if request.endpoint == 'khata.list_khata' %}active{% endif %}" href="{{ url_for('khata.list_khata') }}">
+            <span class="ic"><i data-lucide="clipboard-list" style="width:18px;height:18px;"></i></span> Khata
+        </a>
+        <a class="side-link {% if request.endpoint == 'expenses.list_expenses' %}active{% endif %}" href="{{ url_for('expenses.list_expenses') }}">
+            <span class="ic"><i data-lucide="receipt" style="width:18px;height:18px;"></i></span> Expenses
+        </a>
+        <a class="side-link {% if request.endpoint == 'reports.pnl' %}active{% endif %}" href="{{ url_for('reports.pnl') }}">
+            <span class="ic"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></span> Profit &amp; Loss
+        </a>
+        <div class="side-section-label">Premium</div>
+        <a class="side-link {% if request.endpoint and 'shareholders' in request.endpoint %}active{% endif %}" href="{{ url_for('shareholders.setup') }}">
+            <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Shareholders <span class="pl-tag">PRO</span>
+        </a>
+        <a class="side-link" href="#">
+            <span class="ic"><i data-lucide="settings" style="width:18px;height:18px;"></i></span> Settings
+        </a>
+    </aside>
+
+    <!-- Main content -->
+    <div class="app-main">
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i data-lucide="menu" style="width:20px;height:20px;"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="path">{% block page_path %}{% endblock %}</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-badge">
+                    {% block topbar_badge %}{% endblock %}
+                </span>
+                <div class="topbar-avatar">
+                    {{ current_user.owner_name[0] | upper if current_user.is_authenticated else 'M' }}
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash-msg flash-{{ category }}">
+                    <i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'warning' %}alert-triangle{% elif category == 'danger' %}x-circle{% elif category == 'info' %}info{% else %}message-circle{% endif %}" style="width:18px;height:18px;flex-shrink:0;"></i>
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;margin-left:auto;padding:4px;color:inherit;opacity:0.6;">
+                        <i data-lucide="x" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<style>
+.app-shell { display: flex; min-height: 100vh; background: var(--paper-alt); }
+.app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.content { padding: 28px 32px; flex: 1; }
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-badge {
+    background: var(--gold-tint); color: var(--gold-deep);
+    font-family: var(--font-sans);
+    font-size: 11.5px; font-weight: 700;
+    padding: 5px 14px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 4px;
+}
+.topbar-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-sans);
+    font-weight: 700; font-size: 14px;
+    box-shadow: 0 2px 8px rgba(28,27,25,0.15);
+    transition: transform 0.15s ease;
+}
+.topbar-avatar:hover { transform: scale(1.05); }
+.flash-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.flash-msg {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    animation: flashIn 0.3s ease;
+}
+@keyframes flashIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.flash-success { background: #EDF5F0; color: #2E5941; border: 1px solid #2E5941; }
+.flash-warning { background: #FDF8EC; color: #8A6A1E; border: 1px solid #C9A959; }
+.flash-danger { background: #FDF0EE; color: #A13D2E; border: 1px solid #A13D2E; }
+.flash-info { background: #EDF5F0; color: #2E5941; border: 1px solid #DDD4B8; }
+</style>
+{% endblock %}

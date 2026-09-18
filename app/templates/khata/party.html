@@ -1,0 +1,119 @@
+{% extends "app_layout.html" %}
+
+{% block title %}{{ party_name }} — Khata — Mubashar's Book{% endblock %}
+{% block page_title %}{{ party_name }}{% endblock %}
+{% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Khata / {{ party_name }}{% endblock %}
+
+{% block topbar_badge %}
+    {% if entry_type == 'receivable' %}
+        <i data-lucide="trending-up" style="width:12px;height:12px;"></i> Owes us
+    {% else %}
+        <i data-lucide="trending-down" style="width:12px;height:12px;"></i> We owe
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Party Header -->
+<div class="card animate-on-scroll" style="margin-bottom:20px;">
+    <div class="card-pad" style="display:flex;align-items:center;gap:16px;">
+        <div style="width:56px;height:56px;border-radius:50%;{% if entry_type == 'receivable' %}background:var(--ledger-tint);color:var(--ledger);{% else %}background:var(--cashout-tint);color:var(--cashout);{% endif %}display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-weight:700;font-size:22px;">
+            {{ party_name[0] | upper }}
+        </div>
+        <div style="flex:1;">
+            <div style="font-family:var(--font-serif);font-size:22px;font-weight:600;">{{ party_name }}</div>
+            <div style="font-size:13px;color:var(--ink-faint);margin-top:2px;">
+                {% if entry_type == 'receivable' %}Customer — owes us money{% else %}Supplier — we owe them money{% endif %}
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Pending</div>
+            <div style="font-family:var(--font-serif);font-size:28px;font-weight:700;{% if entry_type == 'receivable' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
+                Rs {{ "{:,.0f}".format(total_pending) }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Entries -->
+{% if pending_entries %}
+<div class="card animate-on-scroll" style="margin-bottom:20px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="clock" style="width:18px;height:18px;color:var(--gold);"></i>
+            Pending Entries
+        </h3>
+        <div style="overflow-x:auto;">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Date</th>
+                        <th><i data-lucide="file-text" style="width:12px;height:12px;"></i> Description</th>
+                        <th class="num"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in pending_entries %}
+                    <tr>
+                        <td style="white-space:nowrap;">{{ entry.entry_date.strftime('%d %b %Y') }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td class="num" style="font-weight:700;{% if entry.entry_type == 'receivable' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
+                            Rs {{ "{:,.0f}".format((entry.amount - (entry.settled_amount or 0))|float) }}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('khata.settle_khata', entry_id=entry.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Settle this entry? Rs {{ '{:,.0f}'.format((entry.amount - (entry.settled_amount or 0))|float) }} will be added to cashbook.')">
+                                    <i data-lucide="check-circle" style="width:14px;height:14px;"></i> Settle
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Settled Entries -->
+{% if settled_entries %}
+<div class="card animate-on-scroll">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:16px;display:flex;align-items:center;gap:10px;color:var(--ink-faint);">
+            <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+            Settled Entries
+        </h3>
+        <div style="overflow-x:auto;">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Date</th>
+                        <th><i data-lucide="file-text" style="width:12px;height:12px;"></i> Description</th>
+                        <th class="num"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Amount</th>
+                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Settled On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in settled_entries %}
+                    <tr style="opacity:0.6;">
+                        <td style="white-space:nowrap;">{{ entry.entry_date.strftime('%d %b %Y') }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td class="num" style="font-weight:600;">Rs {{ "{:,.0f}".format(entry.amount|float) }}</td>
+                        <td style="white-space:nowrap;">{{ entry.settled_date.strftime('%d %b %Y') if entry.settled_date else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top:20px;">
+    <a href="{{ url_for('khata.list_khata') }}" class="btn btn-outline">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Back to Khata
+    </a>
+</div>
+{% endblock %}
