@@ -41,20 +41,34 @@
                         <input type="text" name="owner_name" placeholder="e.g. Muhammad Ahmed" required>
                     </div>
                     <div class="field">
-                        <label><i data-lucide="phone" style="width:14px;height:14px;"></i> Phone number *</label>
-                        <input type="tel" name="phone" placeholder="03XX XXXXXXX" required>
+                        <label><i data-lucide="phone" style="width:14px;height:14px;"></i> Phone number <span style="color:var(--ink-faint);font-size:11px;">(optional)</span></label>
+                        <input type="tel" name="phone" placeholder="03XX XXXXXXX">
                     </div>
                     <div class="field">
                         <label><i data-lucide="mail" style="width:14px;height:14px;"></i> Email address *</label>
-                        <input type="email" name="email" placeholder="you@example.com" required>
+                        <div class="input-with-toggle">
+                            <input type="email" name="email" id="signup-email" placeholder="you@example.com" required>
+                        </div>
                     </div>
                     <div class="field">
                         <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Password *</label>
-                        <input type="password" name="password" placeholder="Min 8 characters" required minlength="8">
+                        <div class="input-with-toggle">
+                            <input type="password" name="password" id="signup-password" placeholder="Min 8 characters" required minlength="8">
+                            <button type="button" class="password-toggle" onclick="togglePassword('signup-password', this)" aria-label="Show password">
+                                <i data-lucide="eye" class="eye-open" style="width:18px;height:18px;"></i>
+                                <i data-lucide="eye-off" class="eye-closed" style="width:18px;height:18px;display:none;"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="field">
                         <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Confirm Password *</label>
-                        <input type="password" name="confirm_password" placeholder="Confirm password" required minlength="8">
+                        <div class="input-with-toggle">
+                            <input type="password" name="confirm_password" id="signup-confirm-password" placeholder="Confirm password" required minlength="8">
+                            <button type="button" class="password-toggle" onclick="togglePassword('signup-confirm-password', this)" aria-label="Show password">
+                                <i data-lucide="eye" class="eye-open" style="width:18px;height:18px;"></i>
+                                <i data-lucide="eye-off" class="eye-closed" style="width:18px;height:18px;display:none;"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div style="border-top:1px solid var(--rule);margin:20px 0;padding-top:20px;">
@@ -83,6 +97,23 @@
     </div>
 </div>
 
+<script>
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const eyeOpen = button.querySelector('.eye-open');
+    const eyeClosed = button.querySelector('.eye-closed');
+    if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'block';
+    } else {
+        input.type = 'password';
+        eyeOpen.style.display = 'block';
+        eyeClosed.style.display = 'none';
+    }
+}
+</script>
+
 <style>
 .auth-page { min-height: 100vh; display: flex; }
 .auth-split { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
@@ -102,7 +133,7 @@
     background: rgba(201,169,89,0.12);
     border-radius: 50%;
     top: -10%; right: -10%;
-    filter: blur(60px);
+    filter: blur(60px).
 }
 .auth-visual::after {
     content: '';
@@ -111,7 +142,7 @@
     background: rgba(46,89,65,0.1);
     border-radius: 50%;
     bottom: -5%; left: -5%;
-    filter: blur(60px);
+    filter: blur(60px).
 }
 .auth-visual-content { position: relative; z-index: 1; }
 .auth-visual h2 { font-family: var(--font-serif); font-size: 30px; margin: 32px 0 16px; }
@@ -127,6 +158,17 @@
 .auth-form-card { width: 100%; max-width: 420px; }
 .auth-form-card h1 { font-family: var(--font-serif); font-size: 28px; margin-bottom: 8px; }
 .auth-subtitle { font-family: var(--font-sans); color: var(--ink-faint); margin-bottom: 24px; font-size: 15px; }
+
+.input-with-toggle { position: relative; }
+.input-with-toggle input { width: 100%; padding-right: 50px; }
+.password-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); padding: 4px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; transition: color 0.15s, background 0.15s;
+}
+.password-toggle:hover { color: var(--ink); background: var(--paper-alt); }
+
 .auth-alert {
     display: flex; align-items: center; gap: 8px;
     background: var(--cashout-tint); color: var(--cashout);
@@ -134,21 +176,30 @@
     margin-bottom: 16px; font-family: var(--font-sans);
     font-size: 13.5px; font-weight: 500;
 }
-.auth-alert.flash-success { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
-.auth-alert.flash-warning { background: var(--gold-tint); color: var(--gold-deep); border: 1px solid var(--gold); }
-.auth-alert.flash-info { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
-.auth-alert.flash-danger { background: var(--cashout-tint); color: var(--cashout); border: 1px solid var(--cashout); }
+.auth-alert.flash-success { background: #F0F9F4; color: #1B5E3A; border: 1px solid #D1EBD8; }
+.auth-alert.flash-warning { background: #FEF8E8; color: #8A6A1E; border: 1px solid #F5E4B8; }
+.auth-alert.flash-info { background: #EFF6FF; color: #1E4D8C; border: 1px solid #D1E6F9; }
+.auth-alert.flash-danger { background: #FDF0EE; color: #A13D2E; border: 1px solid #F5D6D4; }
+
 .auth-footer {
     text-align: center; margin-top: 20px;
     font-family: var(--font-sans); font-size: 14px; color: var(--ink-faint);
 }
-.auth-footer a { color: var(--ledger); font-weight: 600; }
-.auth-footer a:hover { text-decoration: underline; }
+.auth-footer a { color: var(--ink); font-weight: 600; }
+.auth-footer a:hover { color: var(--gold); text-decoration: underline; }
 
+/* Responsive */
 @media (max-width: 991.98px) {
     .auth-split { grid-template-columns: 1fr; }
     .auth-visual { display: none; }
     .auth-form-side { padding: 24px; max-height: none; }
+}
+
+@media (max-width: 575.98px) {
+    .auth-form-side { padding: 16px; }
+    .auth-form-card { max-width: 100%; }
+    .auth-form-card h1 { font-size: 24px; }
+    .auth-form-side { padding: 16px; }
 }
 </style>
 {% endblock %}

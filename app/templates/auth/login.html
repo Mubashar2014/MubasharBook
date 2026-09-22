@@ -15,9 +15,9 @@
                 <h2>Apni dukan ka poora hisaab</h2>
                 <p>Stock, cashbook, kharche aur profit — sab kuch ek jagah. Aur agar investor hai, to munafay ki taqseem bhi Shariah ke mutabiq.</p>
                 <div class="auth-visual-features">
-                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--cashin);"></i> Real-time stock tracking</div>
-                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--cashin);"></i> Auto profit/loss calculation</div>
-                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--cashin);"></i> Shariah-compliant investor split</div>
+                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--gold);"></i> Real-time stock tracking</div>
+                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--gold);"></i> Auto profit/loss calculation</div>
+                    <div class="auth-feature-item"><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--gold);"></i> Shariah-compliant investor split</div>
                 </div>
             </div>
         </div>
@@ -37,12 +37,20 @@
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="field">
-                        <label><i data-lucide="phone" style="width:14px;height:14px;"></i> Phone number</label>
-                        <input type="tel" name="phone" placeholder="03XX XXXXXXX" required>
+                        <label><i data-lucide="mail" style="width:14px;height:14px;"></i> Email address</label>
+                        <div class="input-with-toggle">
+                            <input type="email" name="email" id="login-email" placeholder="you@example.com" required>
+                        </div>
                     </div>
                     <div class="field">
                         <label><i data-lucide="lock" style="width:14px;height:14px;"></i> Password</label>
-                        <input type="password" name="password" placeholder="Enter your password" required>
+                        <div class="input-with-toggle">
+                            <input type="password" name="password" id="login-password" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" aria-label="Show password">
+                                <i data-lucide="eye" class="eye-open" style="width:18px;height:18px;"></i>
+                                <i data-lucide="eye-off" class="eye-closed" style="width:18px;height:18px;display:none;"></i>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">
                         <i data-lucide="log-in" style="width:18px;height:18px;"></i> Log in
@@ -56,6 +64,23 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const eyeOpen = button.querySelector('.eye-open');
+    const eyeClosed = button.querySelector('.eye-closed');
+    if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'block';
+    } else {
+        input.type = 'password';
+        eyeOpen.style.display = 'block';
+        eyeClosed.style.display = 'none';
+    }
+}
+</script>
 
 <style>
 .auth-page { min-height: 100vh; display: flex; }
@@ -96,9 +121,20 @@
     display: flex; align-items: center; justify-content: center;
     padding: 40px; background: var(--paper);
 }
-.auth-form-card { width: 100%; max-width: 400px; }
+.auth-form-card { width: 100%; max-width: 420px; }
 .auth-form-card h1 { font-family: var(--font-serif); font-size: 28px; margin-bottom: 8px; }
 .auth-subtitle { font-family: var(--font-sans); color: var(--ink-faint); margin-bottom: 28px; font-size: 15px; }
+
+.input-with-toggle { position: relative; }
+.input-with-toggle input { width: 100%; padding-right: 50px; }
+.password-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); padding: 4px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; transition: color 0.15s, background 0.15s;
+}
+.password-toggle:hover { color: var(--ink); background: var(--paper-alt); }
+
 .auth-alert {
     display: flex; align-items: center; gap: 8px;
     background: var(--cashout-tint); color: var(--cashout);
@@ -106,21 +142,30 @@
     margin-bottom: 20px; font-family: var(--font-sans);
     font-size: 13.5px; font-weight: 500;
 }
-.auth-alert.flash-success { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
-.auth-alert.flash-warning { background: var(--gold-tint); color: var(--gold-deep); border: 1px solid var(--gold); }
-.auth-alert.flash-info { background: var(--ledger-tint); color: var(--ledger); border: 1px solid var(--ledger); }
-.auth-alert.flash-danger { background: var(--cashout-tint); color: var(--cashout); border: 1px solid var(--cashout); }
+.auth-alert.flash-success { background: #F0F9F4; color: #1B5E3A; border: 1px solid #D1EBD8; }
+.auth-alert.flash-warning { background: #FEF8E8; color: #8A6A1E; border: 1px solid #F5E4B8; }
+.auth-alert.flash-info { background: #EFF6FF; color: #1E4D8C; border: 1px solid #D1E6F9; }
+.auth-alert.flash-danger { background: #FDF0EE; color: #A13D2E; border: 1px solid #F5D6D4; }
+
 .auth-footer {
     text-align: center; margin-top: 24px;
     font-family: var(--font-sans); font-size: 14px; color: var(--ink-faint);
 }
-.auth-footer a { color: var(--ledger); font-weight: 600; }
-.auth-footer a:hover { text-decoration: underline; }
+.auth-footer a { color: var(--ink); font-weight: 600; }
+.auth-footer a:hover { color: var(--gold); text-decoration: underline; }
 
+/* Responsive */
 @media (max-width: 991.98px) {
     .auth-split { grid-template-columns: 1fr; }
     .auth-visual { display: none; }
     .auth-form-side { padding: 24px; }
+}
+
+@media (max-width: 575.98px) {
+    .auth-form-side { padding: 16px; }
+    .auth-form-card { max-width: 100%; }
+    .auth-form-card h1 { font-size: 24px; }
+    .auth-form-side { padding: 16px; }
 }
 </style>
 {% endblock %}

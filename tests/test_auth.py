@@ -69,7 +69,7 @@ def test_login_page_loads(client):
 
 def test_login_with_valid_credentials(client, test_user):
     resp = client.post('/auth/login', data={
-        'phone': '03001234567',
+        'email': 'testuser@test.com',
         'password': 'password123',
     }, follow_redirects=False)
 
@@ -79,7 +79,7 @@ def test_login_with_valid_credentials(client, test_user):
 
 def test_login_with_invalid_credentials(client, test_user):
     resp = client.post('/auth/login', data={
-        'phone': '03001234567',
+        'email': 'testuser@test.com',
         'password': 'wrongpassword',
     }, follow_redirects=False)
 
@@ -89,7 +89,7 @@ def test_login_with_invalid_credentials(client, test_user):
 
 def test_login_with_nonexistent_user(client):
     resp = client.post('/auth/login', data={
-        'phone': '00000000000',
+        'email': 'nonexistent@example.com',
         'password': 'whatever',
     }, follow_redirects=False)
 

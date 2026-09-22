@@ -187,9 +187,9 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(phone=form.phone.data.strip()).first()
+        user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid phone number or password.', 'danger')
+            flash('Invalid email or password.', 'danger')
             return redirect(url_for('auth.login'))
 
         if not user.is_active:
