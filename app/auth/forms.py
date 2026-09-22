@@ -6,7 +6,7 @@ from flask_wtf.file import FileAllowed
 
 class SignupForm(FlaskForm):
     owner_name = StringField('Owner name', validators=[DataRequired(), Length(max=120)])
-    phone = StringField('Phone number', validators=[DataRequired(), Length(max=20)])
+    phone = StringField('Phone number', validators=[Optional(), Length(max=20)])
     email = EmailField('Email address', validators=[DataRequired(), Email(), Length(max=120)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField('Confirm password', validators=[DataRequired(), EqualTo('password')])
@@ -19,7 +19,7 @@ class SignupForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    phone = StringField('Phone number', validators=[DataRequired()])
+    email = EmailField('Email address', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
 
 
