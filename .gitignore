@@ -13,4 +13,4 @@ uploads/
 htmlcov/
 *.egg-info/
 dist/
-build/
+build/app/config.py
