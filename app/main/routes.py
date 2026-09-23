@@ -12,6 +12,7 @@ from app.models.cashbook import CashEntry
 from app.models.stock import StockItem
 from app.models.expense import Expense
 from app.models.khata import KhataEntry
+from app.utils import ensure_opening_cash, get_cash_balance, OPENING_CAPITAL_DESC
 
 
 def _save_shop_image(file_storage, shop_id):
@@ -63,9 +64,10 @@ def dashboard():
     total_capital = initial_investment + cumulative_profit - total_expenses
 
     # ===== WHERE THE MONEY IS =====
-    # Cash in hand (cashbook balance)
-    last_cash = CashEntry.query.filter_by(shop_id=shop_id).order_by(CashEntry.id.desc()).first()
-    cash_in_hand = float(last_cash.balance_after) if last_cash and last_cash.balance_after else 0
+    # Cash in hand (includes opening capital entry)
+    ensure_opening_cash(shop)
+    db.session.commit()
+    cash_in_hand = get_cash_balance(shop_id)
 
     # Invested in stock (cost value of in-stock items)
     stock_value = float(db.session.query(func.coalesce(func.sum(StockItem.cost_price * StockItem.quantity), 0)).filter(
@@ -82,9 +84,10 @@ def dashboard():
         KhataEntry.shop_id == shop_id, KhataEntry.entry_type == 'payable', KhataEntry.status == 'pending'
     ).scalar() or 0)
 
-    # ===== TODAY'S ACTIVITY =====
+    # ===== TODAY'S ACTIVITY (exclude opening capital) =====
     today_cash_in = float(db.session.query(func.coalesce(func.sum(CashEntry.amount), 0)).filter(
-        CashEntry.shop_id == shop_id, CashEntry.entry_type == 'in', CashEntry.entry_date == today
+        CashEntry.shop_id == shop_id, CashEntry.entry_type == 'in', CashEntry.entry_date == today,
+        CashEntry.description != OPENING_CAPITAL_DESC,
     ).scalar() or 0)
 
     today_cash_out = float(db.session.query(func.coalesce(func.sum(CashEntry.amount), 0)).filter(
@@ -123,8 +126,10 @@ def dashboard():
         else:
             month_profit_received += total_profit
 
-    # Recent cashbook entries
-    recent_entries = CashEntry.query.filter_by(shop_id=shop_id).order_by(
+    # Recent cashbook entries (hide opening capital row)
+    recent_entries = CashEntry.query.filter(
+        CashEntry.shop_id == shop_id, CashEntry.description != OPENING_CAPITAL_DESC
+    ).order_by(
         CashEntry.entry_date.desc(), CashEntry.id.desc()
     ).limit(5).all()
 
@@ -179,6 +184,7 @@ def settings():
                 if img_path:
                     shop.shop_image = img_path
         
+        ensure_opening_cash(shop)
         db.session.commit()
         flash('Shop details updated.', 'success')
         return redirect(url_for('main.settings'))

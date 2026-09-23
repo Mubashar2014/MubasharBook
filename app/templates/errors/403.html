@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Forbidden — Mubashar's Book{% endblock %}
+{% block body %}
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper-alt);padding:24px;font-family:var(--font-sans);">
+    <div style="text-align:center;max-width:420px;">
+        <div style="font-family:var(--font-serif);font-size:64px;font-weight:700;color:var(--ink);">403</div>
+        <h1 style="font-family:var(--font-serif);font-size:22px;margin:8px 0 12px;color:var(--ink);">Access denied</h1>
+        <p style="color:var(--ink-faint);font-size:14px;line-height:1.6;margin-bottom:24px;">
+            {{ message or "You don't have permission to view this page." }}
+        </p>
+        <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.landing') }}" class="btn btn-primary">Go to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

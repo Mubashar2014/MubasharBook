@@ -5,7 +5,7 @@ from app.khata import khata_bp
 from app.models.khata import KhataEntry
 from app.models.cashbook import CashEntry
 from app.extensions import db
-from app.utils import get_user_shop
+from app.utils import get_user_shop, ensure_opening_cash, OPENING_CAPITAL_DESC
 from sqlalchemy import func
 
 
@@ -89,8 +89,9 @@ def settle_khata(entry_id):
         cash_type = 'out'
         desc = f"Khata settled: paid to {entry.party_name} — {entry.description}"
 
+    ensure_opening_cash(shop)
     prev = CashEntry.query.filter_by(shop_id=shop.id).order_by(CashEntry.id.desc()).first()
-    prev_balance = float(prev.balance_after) if prev and prev.balance_after else 0.0
+    prev_balance = float(prev.balance_after) if prev and prev.balance_after else float(shop.initial_investment or 0)
     new_balance = prev_balance + pending if cash_type == 'in' else prev_balance - pending
 
     cash = CashEntry(

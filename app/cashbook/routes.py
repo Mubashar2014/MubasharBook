@@ -6,7 +6,7 @@ from app.cashbook.forms import CashEntryForm
 from app.models.cashbook import CashEntry
 from app.models.stock import StockItem
 from app.extensions import db
-from app.utils import get_user_shop
+from app.utils import get_user_shop, ensure_opening_cash, recalc_cash_balances, OPENING_CAPITAL_DESC
 
 
 @cashbook_bp.route('/')
@@ -16,7 +16,9 @@ def list_entries():
     period = request.args.get('period', 'all')
     today = date.today()
 
-    query = CashEntry.query.filter_by(shop_id=shop.id)
+    query = CashEntry.query.filter(
+        CashEntry.shop_id == shop.id, CashEntry.description != OPENING_CAPITAL_DESC
+    )
 
     if period == 'today':
         query = query.filter_by(entry_date=today)
@@ -53,10 +55,11 @@ def add_entry():
     form.linked_stock_id.choices = [(0, '-- None --')] + [(s.id, f'{s.model_name} ({s.imei or "no IMEI"})') for s in stock_items]
 
     if form.validate_on_submit():
+        ensure_opening_cash(shop)
         last_entry = CashEntry.query.filter_by(shop_id=shop.id).order_by(
             CashEntry.id.desc()
         ).first()
-        prev_balance = float(last_entry.balance_after) if last_entry and last_entry.balance_after else 0.0
+        prev_balance = float(last_entry.balance_after) if last_entry and last_entry.balance_after else float(shop.initial_investment or 0)
 
         amt = float(form.amount.data)
         if form.entry_type.data == 'in':
