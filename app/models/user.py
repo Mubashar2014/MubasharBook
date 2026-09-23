@@ -16,10 +16,13 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     language = db.Column(db.String(5), default='ur')  # 'en' or 'ur'
     is_premium = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)  # Product owner/admin flag
     trial_start = db.Column(db.DateTime, default=datetime.utcnow)
     trial_end = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
-    is_verified = db.Column(db.Boolean, default=False)  # email verified
+    is_verified = db.Column(db.Boolean, default=False)  # email verified (deprecated, use email_verified_at)
+    email_verified_at = db.Column(db.DateTime, nullable=True)  # When email was verified
+    last_login_at = db.Column(db.DateTime, nullable=True)  # Last successful login
     verification_token = db.Column(db.String(64), nullable=True, index=True)
     verification_sent_at = db.Column(db.DateTime, nullable=True)
     reset_token = db.Column(db.String(64), nullable=True, index=True)
@@ -75,6 +78,16 @@ class User(UserMixin, db.Model):
     def clear_reset_token(self):
         self.reset_token = None
         self.reset_token_expiry = None
+
+    def mark_login(self):
+        """Update last login timestamp."""
+        self.last_login_at = datetime.utcnow()
+
+    def verify_email(self):
+        """Mark email as verified."""
+        self.is_verified = True
+        self.email_verified_at = datetime.utcnow()
+        self.clear_verification_token()
 
 
 class Investor(UserMixin, db.Model):

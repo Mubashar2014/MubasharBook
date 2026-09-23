@@ -106,8 +106,7 @@ def verify_email_token(token):
         flash('Email already verified. Please log in.', 'info')
         return redirect(url_for('auth.login'))
 
-    user.is_verified = True
-    user.clear_verification_token()
+    user.verify_email()
     db.session.commit()
 
     # Send welcome email
@@ -202,6 +201,14 @@ def login():
             return redirect(url_for('auth.login'))
 
         login_user(user)
+        user.mark_login()
+        db.session.commit()
+        
+        # Redirect admin users to admin panel
+        if user.is_admin:
+            flash('Welcome back, Admin!', 'success')
+            return redirect(url_for('admin.dashboard'))
+        
         flash('Welcome back, {}!'.format(user.owner_name), 'success')
         next_page = request.args.get('next')
         return redirect(next_page or url_for('main.dashboard'))
