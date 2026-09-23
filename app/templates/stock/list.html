@@ -51,44 +51,24 @@
 <!-- Filter + Search -->
 <div class="card animate-on-scroll" style="margin-bottom:20px;">
     <div class="card-pad" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <div class="filter-chips">
-            <a href="?status=all{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'all' %}active{% endif %}">All</a>
-            <a href="?status=in_stock{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'in_stock' %}active{% endif %}">In Stock</a>
-            <a href="?status=sold{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'sold' %}active{% endif %}">Sold</a>
+        <div class="filter-chips" id="filter-chips">
+            <button type="button" class="chip active" data-status="all">All</button>
+            <button type="button" class="chip" data-status="in_stock">In Stock</button>
+            <button type="button" class="chip" data-status="sold">Sold</button>
         </div>
-        <form method="GET" id="stock-search-form" style="margin-left:auto;">
-            <input type="hidden" name="status" value="{{ status_filter }}">
-            <div class="search-box">
-                <i data-lucide="search" style="width:16px;height:16px;"></i>
-                <input type="text" name="q" id="stock-search-input" value="{{ search }}" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
-            </div>
-        </form>
+        <div class="search-box" style="margin-left:auto;">
+            <i data-lucide="search" style="width:16px;height:16px;"></i>
+            <input type="text" id="stock-search-input" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
+        </div>
     </div>
 </div>
-
-<script>
-(function () {
-    const form = document.getElementById('stock-search-form');
-    const input = document.getElementById('stock-search-input');
-    if (!form || !input) return;
-    let timer;
-    input.addEventListener('input', function () {
-        clearTimeout(timer);
-        timer = setTimeout(function () { form.submit(); }, 350);
-    });
-    input.form.addEventListener('submit', function (e) {
-        if (!input.value.trim() && !input.dataset.touched) e.preventDefault();
-    });
-    input.addEventListener('focus', function () { input.dataset.touched = '1'; });
-})();
-</script>
 
 <!-- Stock Table -->
 <div class="card animate-on-scroll">
     <div class="card-pad">
         {% if items %}
         <div style="overflow-x:auto;">
-            <table class="ledger-table">
+            <table class="ledger-table" id="stock-table">
                 <thead>
                     <tr>
                         <th><i data-lucide="smartphone" style="width:12px;height:12px;"></i> Model</th>
@@ -103,7 +83,11 @@
                 </thead>
                 <tbody>
                     {% for item in items %}
-                    <tr>
+                    <tr data-status="{{ item.status }}" 
+                        data-model="{{ item.model_name|lower }}" 
+                        data-imei="{{ (item.imei or '')|lower }}" 
+                        data-supplier="{{ (item.supplier_name or '')|lower }}"
+                        data-customer="{{ (item.customer_name or '')|lower }}">
                         <td style="font-weight:600;">{{ item.model_name }}</td>
                         <td style="font-family:monospace;font-size:12px;">{{ item.imei or '—' }}</td>
                         <td class="num">{{ item.quantity }}</td>
@@ -138,6 +122,11 @@
                 </tbody>
             </table>
         </div>
+        <div id="no-results" style="display:none;" class="empty-state">
+            <div class="empty-icon"><i data-lucide="search" style="width:40px;height:40px;"></i></div>
+            <div class="empty-title">No matching items</div>
+            <div class="empty-desc">Try a different search term or filter.</div>
+        </div>
         {% else %}
         <div class="empty-state">
             <div class="empty-icon"><i data-lucide="package" style="width:40px;height:40px;"></i></div>
@@ -147,4 +136,77 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+(function() {
+    const searchInput = document.getElementById('stock-search-input');
+    const filterChips = document.querySelectorAll('#filter-chips .chip');
+    const table = document.getElementById('stock-table');
+    const noResults = document.getElementById('no-results');
+    
+    if (!searchInput || !table) return;
+    
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    let currentFilter = 'all';
+    
+    function filterAndSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const status = row.dataset.status;
+            const model = row.dataset.model;
+            const imei = row.dataset.imei;
+            const supplier = row.dataset.supplier;
+            const customer = row.dataset.customer;
+            
+            // Check status filter
+            const matchesFilter = currentFilter === 'all' || status === currentFilter;
+            
+            // Check search term
+            const matchesSearch = !searchTerm || 
+                model.includes(searchTerm) || 
+                imei.includes(searchTerm) || 
+                supplier.includes(searchTerm) ||
+                customer.includes(searchTerm);
+            
+            if (matchesFilter && matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide "no results" message
+        if (table && noResults) {
+            if (visibleCount === 0) {
+                table.style.display = 'none';
+                noResults.style.display = 'block';
+            } else {
+                table.style.display = '';
+                noResults.style.display = 'none';
+            }
+        }
+    }
+    
+    // Search input handler
+    searchInput.addEventListener('input', filterAndSearch);
+    
+    // Filter chip handlers
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            filterChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentFilter = chip.dataset.status;
+            filterAndSearch();
+        });
+    });
+    
+    // Initialize icons after filtering
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+})();
+</script>
 {% endblock %}

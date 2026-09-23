@@ -65,32 +65,14 @@ def _create_khata_entry(shop_id, party_name, entry_type, amount, description, en
 @login_required
 def list_stock():
     shop = get_user_shop()
-    status_filter = request.args.get('status', 'all')
-    search = request.args.get('q', '').strip()
 
-    query = StockItem.query.filter_by(shop_id=shop.id)
+    # Get all items (filtering is now done client-side)
+    items = StockItem.query.filter_by(shop_id=shop.id).order_by(StockItem.created_at.desc()).all()
 
-    if status_filter in ('in_stock', 'sold'):
-        query = query.filter_by(status=status_filter)
-
-    if search:
-        query = query.filter(
-            or_(
-                StockItem.model_name.ilike(f'%{search}%'),
-                StockItem.imei.ilike(f'%{search}%'),
-                StockItem.supplier_name.ilike(f'%{search}%'),
-                StockItem.customer_name.ilike(f'%{search}%'),
-            )
-        )
-
-    items = query.order_by(StockItem.created_at.desc()).all()
-
-    total_items = StockItem.query.filter_by(shop_id=shop.id).count()
-    in_stock_count = StockItem.query.filter_by(shop_id=shop.id, status='in_stock').count()
-    sold_count = StockItem.query.filter_by(shop_id=shop.id, status='sold').count()
-    total_value = db.session.query(
-        db.func.coalesce(db.func.sum(StockItem.cost_price * StockItem.quantity), 0)
-    ).filter_by(shop_id=shop.id, status='in_stock').scalar()
+    total_items = len(items)
+    in_stock_count = sum(1 for item in items if item.status == 'in_stock')
+    sold_count = sum(1 for item in items if item.status == 'sold')
+    total_value = sum(float(item.cost_price) * item.quantity for item in items if item.status == 'in_stock')
 
     return render_template(
         'stock/list.html',
@@ -99,8 +81,6 @@ def list_stock():
         in_stock_count=in_stock_count,
         sold_count=sold_count,
         total_value=total_value,
-        status_filter=status_filter,
-        search=search,
     )
 
 
