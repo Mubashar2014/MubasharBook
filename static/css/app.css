@@ -499,8 +499,9 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
     color: #5A5748;
     margin-bottom: 6px;
 }
-.field input, .field select {
+.field input, .field select, .field input[type="date"] {
     width: 100%;
+    max-width: 100%;
     padding: 12px 14px;
     border: 1.5px solid #DDD4B8;
     border-radius: 10px;
@@ -508,9 +509,30 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
     font-size: 14px;
     background: #F7F3E8;
     color: #1C1B19;
-    transition: all 0.2s ease;
+    box-sizing: border-box;
 }
-.field input:focus, .field select:focus {
+.field input[type="date"] { min-width: 0; }
+
+/* Form grids (stock in/out, etc.) */
+.form-grid { display: grid; gap: 16px; margin-bottom: 18px; }
+.form-grid:last-child { margin-bottom: 0; }
+.form-grid-2 { grid-template-columns: 1fr 1fr; }
+.form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-grid-wide { grid-template-columns: 2fr 1fr; }
+.form-grid > .field { min-width: 0; margin-bottom: 0; }
+.form-grid + .field, .field + .form-grid { margin-top: 0; }
+
+@media (max-width: 767.98px) {
+    .form-grid-2,
+    .form-grid-3,
+    .form-grid-wide {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .form-grid > .field { margin-bottom: 18px; }
+    .form-grid > .field:last-child { margin-bottom: 0; }
+}
+.field input:focus, .field select:focus, .field input[type="date"]:focus {
     outline: none;
     border-color: #2E5941;
     box-shadow: 0 0 0 3px rgba(46,89,65,0.12);

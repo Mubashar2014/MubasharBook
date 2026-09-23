@@ -86,6 +86,9 @@ def signup():
         user.clear_verification_token()
         db.session.commit()
 
+        # Log the user in automatically after signup
+        login_user(user)
+        
         flash('Your 7-day free trial has started!', 'success')
         return redirect(url_for('main.dashboard'))
 

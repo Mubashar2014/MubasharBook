@@ -16,8 +16,8 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Phone Details -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div class="field" style="grid-column:1/2;">
+            <div class="form-grid form-grid-2">
+                <div class="field">
                     <label><i data-lucide="smartphone" style="width:14px;height:14px;"></i> Phone Model *</label>
                     {{ form.model_name(placeholder="e.g. Samsung A15, iPhone 13") }}
                 </div>
@@ -27,7 +27,7 @@
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div class="form-grid form-grid-3">
                 <div class="field">
                     <label><i data-lucide="layers" style="width:14px;height:14px;"></i> Quantity *</label>
                     {{ form.quantity(id='qty', oninput='calcPending()') }}
@@ -53,7 +53,7 @@
                 <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
                     <i data-lucide="wallet" style="width:16px;height:16px;"></i> Payment to Supplier
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-grid form-grid-2">
                     <div class="field">
                         <label>Paid Now (Rs)</label>
                         {{ form.purchase_paid(id='paid', oninput='calcPending()') }}
@@ -72,7 +72,7 @@
                 <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
                     <i data-lucide="receipt" style="width:16px;height:16px;"></i> Extra Expenses (optional)
                 </div>
-                <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+                <div class="form-grid form-grid-wide">
                     <div class="field">
                         <label>Description</label>
                         {{ form.purchase_expense_desc(placeholder="e.g. Transport, customs, technician check") }}

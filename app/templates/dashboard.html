@@ -62,7 +62,7 @@
             <div class="l">Cash in Hand</div>
             <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="wallet" style="width:18px;height:18px;"></i></div>
         </div>
-        <div class="v pos num">Rs {{ "{:,.0f}".format(cash_in_hand) }}</div>
+        <div class="v {% if cash_in_hand >= 0 %}pos{% else %}neg{% endif %} num">Rs {{ "{:,.0f}".format(cash_in_hand) }}</div>
         <div class="delta"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Available now</div>
     </div>
     <div class="stat-card">

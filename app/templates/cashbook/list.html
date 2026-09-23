@@ -34,7 +34,12 @@
             <tr>
                 <td data-label="Date">{{ entry.entry_date.strftime('%d %b %Y') }}</td>
                 <td data-label="Description">
+                    {% if entry.description == 'Opening capital' %}
+                    <span style="color:var(--gold-deep);font-weight:600;">Opening capital</span>
+                    <br><span style="font-size:11px;color:var(--ink-faint);">Owner's initial investment</span>
+                    {% else %}
                     {{ entry.description }}
+                    {% endif %}
                     {% if entry.linked_stock_id %}
                     <br><span style="font-size:11px;color:var(--ink-faint);">Linked stock #{{ entry.linked_stock_id }}</span>
                     {% endif %}
