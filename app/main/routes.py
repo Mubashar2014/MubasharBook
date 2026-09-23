@@ -126,10 +126,8 @@ def dashboard():
         else:
             month_profit_received += total_profit
 
-    # Recent cashbook entries (hide opening capital row)
-    recent_entries = CashEntry.query.filter(
-        CashEntry.shop_id == shop_id, CashEntry.description != OPENING_CAPITAL_DESC
-    ).order_by(
+    # Recent cashbook entries
+    recent_entries = CashEntry.query.filter_by(shop_id=shop_id).order_by(
         CashEntry.entry_date.desc(), CashEntry.id.desc()
     ).limit(5).all()
 

@@ -42,14 +42,22 @@ def ensure_opening_cash(shop):
         return 0.0
 
     amount = float(shop.initial_investment or 0)
-    opening = CashEntry.query.filter_by(
+    openings = CashEntry.query.filter_by(
         shop_id=shop.id, description=OPENING_CAPITAL_DESC
-    ).first()
+    ).order_by(CashEntry.id.asc()).all()
 
-    if amount <= 0 and opening is None:
+    # Merge accidental duplicates into a single opening row
+    if len(openings) > 1:
+        keep = openings[0]
+        for dup in openings[1:]:
+            db.session.delete(dup)
+        openings = [keep]
+        db.session.flush()
+
+    if amount <= 0 and not openings:
         return 0.0
 
-    if opening is None:
+    if not openings:
         opening = CashEntry(
             shop_id=shop.id,
             entry_type='in',
@@ -60,8 +68,8 @@ def ensure_opening_cash(shop):
         )
         db.session.add(opening)
         db.session.flush()
-    elif float(opening.amount) != amount:
-        opening.amount = amount
+    elif float(openings[0].amount) != amount:
+        openings[0].amount = amount
 
     return recalc_cash_balances(shop.id)
 

@@ -16,9 +16,8 @@ def list_entries():
     period = request.args.get('period', 'all')
     today = date.today()
 
-    query = CashEntry.query.filter(
-        CashEntry.shop_id == shop.id, CashEntry.description != OPENING_CAPITAL_DESC
-    )
+    # Include opening capital so the ledger balance matches cash in hand
+    query = CashEntry.query.filter_by(shop_id=shop.id)
 
     if period == 'today':
         query = query.filter_by(entry_date=today)

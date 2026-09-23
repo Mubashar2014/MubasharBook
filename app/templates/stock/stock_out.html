@@ -34,7 +34,7 @@
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-grid form-grid-2">
                 <div class="field">
                     <label><i data-lucide="banknote" style="width:14px;height:14px;"></i> Selling Price (Rs) *</label>
                     {{ form.sale_price(id='sale_price', oninput='calcPending()') }}
@@ -56,7 +56,7 @@
                 <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
                     <i data-lucide="wallet" style="width:16px;height:16px;"></i> Payment from Customer
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-grid form-grid-2">
                     <div class="field">
                         <label>Received Now (Rs)</label>
                         {{ form.sale_received(id='received', oninput='calcPending()') }}
@@ -75,7 +75,7 @@
                 <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
                     <i data-lucide="receipt" style="width:16px;height:16px;"></i> Extra Expenses (optional)
                 </div>
-                <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+                <div class="form-grid form-grid-wide">
                     <div class="field">
                         <label>Description</label>
                         {{ form.sale_expense_desc(placeholder="e.g. Gift cover, delivery, screen protector") }}
