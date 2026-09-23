@@ -23,7 +23,7 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     per_page = 50
     
-    # Base query - get all users with their shops and subscriptions
+    # Base query - get all users with LEFT JOIN (so users without shops still show)
     query = User.query.outerjoin(Shop).outerjoin(Subscription, Shop.id == Subscription.shop_id)
     
     # Apply search filter
@@ -55,27 +55,31 @@ def dashboard():
         page=page, per_page=per_page, error_out=False
     )
     
-    # Calculate stats
+    # Calculate stats - simple counts without joins
     total_users = User.query.filter_by(is_admin=False).count()
     
-    # Users by subscription status
-    trial_users = db.session.query(func.count(User.id)).join(Shop).join(Subscription).filter(
-        User.is_admin == False,
+    # Users by subscription status - only count those WITH subscriptions
+    trial_users = db.session.query(func.count(Subscription.id)).join(
+        Shop, Subscription.shop_id == Shop.id
+    ).filter(
         Subscription.status == 'trial'
     ).scalar() or 0
     
-    active_users = db.session.query(func.count(User.id)).join(Shop).join(Subscription).filter(
-        User.is_admin == False,
+    active_users = db.session.query(func.count(Subscription.id)).join(
+        Shop, Subscription.shop_id == Shop.id
+    ).filter(
         Subscription.status == 'active'
     ).scalar() or 0
     
-    expired_users = db.session.query(func.count(User.id)).join(Shop).join(Subscription).filter(
-        User.is_admin == False,
+    expired_users = db.session.query(func.count(Subscription.id)).join(
+        Shop, Subscription.shop_id == Shop.id
+    ).filter(
         Subscription.status == 'expired'
     ).scalar() or 0
     
-    suspended_users = db.session.query(func.count(User.id)).join(Shop).join(Subscription).filter(
-        User.is_admin == False,
+    suspended_users = db.session.query(func.count(Subscription.id)).join(
+        Shop, Subscription.shop_id == Shop.id
+    ).filter(
         Subscription.status == 'suspended'
     ).scalar() or 0
     
