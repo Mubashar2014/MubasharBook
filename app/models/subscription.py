@@ -41,7 +41,7 @@ class Subscription(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    shop = db.relationship('Shop', backref='subscription', lazy=True)
+    shop = db.relationship('Shop', backref=db.backref('subscription', uselist=False), lazy=True)
 
     @property
     def is_active(self):
