@@ -6,14 +6,20 @@ from app.stock.forms import StockInForm, StockOutForm
 from app.models.stock import StockItem
 from app.models.cashbook import CashEntry
 from app.models.khata import KhataEntry
+from app.models.shop import Shop
 from app.extensions import db
-from app.utils import get_user_shop
+from app.utils import get_user_shop, ensure_opening_cash, recalc_cash_balances, OPENING_CAPITAL_DESC
 from sqlalchemy import or_
 
 
 def _get_last_balance(shop_id):
     last = CashEntry.query.filter_by(shop_id=shop_id).order_by(CashEntry.id.desc()).first()
-    return float(last.balance_after) if last and last.balance_after else 0.0
+    if last and last.balance_after is not None:
+        return float(last.balance_after)
+    shop = db.session.get(Shop, shop_id)
+    if shop is not None:
+        return ensure_opening_cash(shop)
+    return 0.0
 
 
 def _create_cash_entry(shop_id, entry_type, amount, description, entry_date, linked_stock_id=None):

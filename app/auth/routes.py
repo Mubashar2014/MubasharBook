@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.shop import Shop
 from app.models.subscription import Subscription
 from app.utils.email import send_verification_email, send_password_reset_email, send_welcome_email
+from app.utils import ensure_opening_cash
 
 
 def _save_shop_image(file_storage, shop_id):
@@ -77,6 +78,7 @@ def signup():
             trial_end=user.trial_end,
         )
         db.session.add(sub)
+        ensure_opening_cash(shop)
         db.session.commit()
 
         # Auto-verify for development (remove when email is configured)

@@ -196,6 +196,87 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 }
 .card-pad { padding: 24px; }
 
+/* Capital card */
+.capital-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.capital-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.capital-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #94A3B8;
+    margin-top: 4px;
+}
+.capital-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+.capital-box {
+    text-align: center;
+    padding: 16px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius, 12px);
+    min-width: 0;
+    overflow: hidden;
+}
+.capital-box-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    word-break: break-word;
+}
+.capital-box-value {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(16px, 4vw, 24px);
+    font-weight: 700;
+    margin-top: 4px;
+    color: #fff;
+    word-break: break-word;
+    line-height: 1.2;
+}
+.capital-box-value.pos,
+.capital-total-value.pos { color: #4ADE80; }
+.capital-box-value.neg,
+.capital-total-value.neg { color: #F87171; }
+.capital-total {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #334155;
+}
+.capital-total-value {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(26px, 7vw, 32px);
+    font-weight: 700;
+    margin-top: 4px;
+    line-height: 1.15;
+    word-break: break-word;
+}
+
+@media (max-width: 767.98px) {
+    .capital-grid { grid-template-columns: 1fr; gap: 10px; }
+    .capital-box { padding: 12px 14px; text-align: left; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .capital-box-value { margin-top: 0; text-align: right; }
+    .capital-head { margin-bottom: 14px; }
+    .capital-total { margin-top: 14px; padding-top: 14px; }
+}
+
 /* ============ STAT CARDS ============ */
 .stat-grid {
     display: grid;

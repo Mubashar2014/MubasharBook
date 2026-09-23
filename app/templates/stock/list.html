@@ -52,19 +52,36 @@
 <div class="card animate-on-scroll" style="margin-bottom:20px;">
     <div class="card-pad" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
         <div class="filter-chips">
-            <a href="?status=all" class="chip {% if status_filter == 'all' %}active{% endif %}">All</a>
-            <a href="?status=in_stock" class="chip {% if status_filter == 'in_stock' %}active{% endif %}">In Stock</a>
-            <a href="?status=sold" class="chip {% if status_filter == 'sold' %}active{% endif %}">Sold</a>
+            <a href="?status=all{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'all' %}active{% endif %}">All</a>
+            <a href="?status=in_stock{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'in_stock' %}active{% endif %}">In Stock</a>
+            <a href="?status=sold{% if search %}&q={{ search|urlencode }}{% endif %}" class="chip {% if status_filter == 'sold' %}active{% endif %}">Sold</a>
         </div>
-        <form method="GET" style="margin-left:auto;">
+        <form method="GET" id="stock-search-form" style="margin-left:auto;">
             <input type="hidden" name="status" value="{{ status_filter }}">
             <div class="search-box">
                 <i data-lucide="search" style="width:16px;height:16px;"></i>
-                <input type="text" name="q" value="{{ search }}" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
+                <input type="text" name="q" id="stock-search-input" value="{{ search }}" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
             </div>
         </form>
     </div>
 </div>
+
+<script>
+(function () {
+    const form = document.getElementById('stock-search-form');
+    const input = document.getElementById('stock-search-input');
+    if (!form || !input) return;
+    let timer;
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () { form.submit(); }, 350);
+    });
+    input.form.addEventListener('submit', function (e) {
+        if (!input.value.trim() && !input.dataset.touched) e.preventDefault();
+    });
+    input.addEventListener('focus', function () { input.dataset.touched = '1'; });
+})();
+</script>
 
 <!-- Stock Table -->
 <div class="card animate-on-scroll">

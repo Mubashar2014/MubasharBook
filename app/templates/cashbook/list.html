@@ -53,7 +53,7 @@
                     <span style="color:var(--ink-faint);">—</span>
                     {% endif %}
                 </td>
-                <td data-label="Balance" class="num"><strong>{{ 'Rs {:,.0f}'.format(entry.balance_after | float) if entry.balance_after else 'Rs 0' }}</strong></td>
+                <td data-label="Balance" class="num"><strong>{{ 'Rs {:,.0f}'.format(entry.balance_after | float) if entry.balance_after is not none else 'Rs 0' }}</strong></td>
             </tr>
             {% endfor %}
         </tbody>

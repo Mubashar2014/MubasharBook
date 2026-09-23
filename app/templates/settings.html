@@ -25,9 +25,10 @@
             <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;">No photo uploaded yet.</p>
             {% endif %}
             <form method="POST" enctype="multipart/form-data" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="file" name="shop_image" accept="image/*" style="display:none;" id="shop-image-input" onchange="this.form.submit()">
                 <button type="button" onclick="document.getElementById('shop-image-input').click()" class="btn btn-outline">
-                    <i data-lucide="upload" style="width:16px;height:16px;"></i> {% if shop.shop_image %}Change{% else %}Upload{% endif %}
+                    <i data-lucide="upload" style="width:14px;height:14px;"></i> {% if shop.shop_image %}Change{% else %}Upload{% endif %}
                 </button>
             </form>
         </div>
