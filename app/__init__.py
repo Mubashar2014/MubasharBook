@@ -98,6 +98,11 @@ def create_app(config_name=None):
     def enforce_read_only():
         if not current_user.is_authenticated:
             return None
+        
+        # Redirect admin users away from non-admin pages
+        if current_user.is_admin and request.endpoint and not request.endpoint.startswith('admin.') and not request.endpoint.startswith('auth.') and not request.endpoint.startswith('static'):
+            return redirect(url_for('admin.dashboard'))
+        
         if request.method in ('GET', 'HEAD', 'OPTIONS'):
             return None
         if current_user.is_read_only:
@@ -132,8 +137,15 @@ def create_app(config_name=None):
     from app.investor import investor_bp
     app.register_blueprint(investor_bp, url_prefix='/investor')
 
+    from app.admin import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+
     # Import models so SQLAlchemy knows about all tables
     from app.models import user, shop, stock, cashbook, khata, expense, shareholder, subscription
+
+    # Register CLI commands
+    from app.cli import register_commands
+    register_commands(app)
 
     # Make format_currency available in all templates
     from app.utils import format_currency
