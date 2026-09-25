@@ -181,17 +181,30 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 .badge-instock { background: #EDF5F0 !important; color: #2E5941 !important; }
 .badge-sold { background: #F0ECE0 !important; color: #8A8578 !important; }
 .badge-premium { background: #C9A959 !important; color: #1C1B19 !important; }
+.badge-open { background: #EDF5F0 !important; color: #2E5941 !important; }
+.badge-locked { background: #F0ECE0 !important; color: #8A8578 !important; }
+.badge-reserved { background: #FDF8EC !important; color: #8A6A1E !important; }
+.badge-funded { background: #FDF8EC !important; color: #8A6A1E !important; }
+
+/* Bulk action bar (stock list) */
+.bulk-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bulk-count { font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
+@media (max-width: 767.98px) {
+    .bulk-bar { flex-direction: column; align-items: stretch; }
+    .bulk-bar select, .bulk-bar .btn { width: 100%; box-sizing: border-box; }
+}
 
 /* ============ CARDS ============ */
+/* No !important here so templates can override background with inline styles */
 .card {
-    background: #FFFDF6 !important;
-    border: 1px solid #DDD4B8 !important;
-    border-radius: 14px !important;
-    box-shadow: 0 1px 3px rgba(28,27,25,0.06) !important;
+    background: #FFFDF6;
+    border: 1px solid #DDD4B8;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(28,27,25,0.06);
 }
 .card.card-dark {
-    background: linear-gradient(135deg, #1C1B19, #1E293B) !important;
-    border: none !important;
+    background: linear-gradient(135deg, #1C1B19, #1E293B);
+    border: none;
     color: #fff;
 }
 .card-pad { padding: 24px; }
@@ -559,6 +572,16 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 
 .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* Filter + search bars */
+.filter-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.filter-search { margin-left: auto; flex: 1 1 200px; min-width: 180px; max-width: 320px; }
+.filter-search .search-box { width: 100%; }
+
+@media (max-width: 767.98px) {
+    .filter-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+    .filter-search { margin-left: 0; max-width: none; }
+}
+
 /* ============ SEARCH ============ */
 .search-box {
     display: flex; align-items: center; gap: 10px;
@@ -672,64 +695,150 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
     .section-head h3 { font-size: 16px; }
 }
 
-/* Mobile Tables - Card View */
-@media (max-width: 767.98px) {
+/* Tablet & Mobile Tables - Card View */
+@media (max-width: 1023.98px) {
     .data-table,
-    .ledger-table {
+    .ledger-table,
+    .responsive-table,
+    table.data-table,
+    table.ledger-table,
+    table.responsive-table {
         display: block;
         width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    .data-table table,
-    .ledger-table {
-        min-width: 600px;
+        min-width: 0 !important;
+        overflow: visible;
+        background: transparent;
     }
     .data-table thead,
-    .ledger-table thead {
+    .ledger-table thead,
+    .responsive-table thead {
         display: none;
     }
     .data-table tbody,
-    .ledger-table tbody {
+    .ledger-table tbody,
+    .responsive-table tbody {
         display: block;
     }
     .data-table tr,
-    .ledger-table tr {
+    .ledger-table tr,
+    .responsive-table tr {
         display: block;
-        padding: 16px;
+        padding: 14px 16px;
         margin-bottom: 12px;
         border: 1px solid var(--rule);
         border-radius: var(--radius);
-        background: var(--card);
-        box-shadow: var(--shadow-sm);
+        background: #FFFDF6;
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
     }
     .data-table td,
-    .ledger-table td {
+    .ledger-table td,
+    .responsive-table td {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid var(--rule-soft);
+        gap: 16px;
+        width: 100%;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--rule-soft, #EFE8D5);
         font-size: 13.5px;
+        text-align: left !important;
+        box-sizing: border-box;
     }
     .data-table td:last-child,
-    .ledger-table td:last-child {
+    .ledger-table td:last-child,
+    .responsive-table td:last-child {
         border-bottom: none;
+        padding-bottom: 0;
     }
-    .data-table td::before,
-    .ledger-table td::before {
+    .data-table td:first-child,
+    .ledger-table td:first-child,
+    .responsive-table td:first-child {
+        padding-top: 0;
+    }
+    /* Only render label when data-label is present */
+    .data-table td[data-label]::before,
+    .ledger-table td[data-label]::before,
+    .responsive-table td[data-label]::before {
         content: attr(data-label);
+        flex: 0 0 auto;
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        color: var(--ink-faint);
+        color: var(--ink-faint, #8A8574);
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+    /* Value side wraps nicely */
+    .data-table td[data-label] > *,
+    .ledger-table td[data-label] > *,
+    .responsive-table td[data-label] > * {
+        min-width: 0;
+        text-align: right;
+    }
+    .data-table td[data-label],
+    .ledger-table td[data-label],
+    .responsive-table td[data-label] {
+        flex-wrap: wrap;
+    }
+    /* Action cells: full-width buttons */
+    .data-table td:last-child,
+    .ledger-table td:last-child,
+    .responsive-table td:last-child {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .data-table td:last-child > *,
+    .ledger-table td:last-child > *,
+    .responsive-table td:last-child > * {
+        text-align: left;
+    }
+    .data-table td:last-child div[style*="display:flex"],
+    .ledger-table td:last-child div[style*="display:flex"],
+    .responsive-table td:last-child div[style*="display:flex"] {
+        flex-wrap: wrap;
+        justify-content: flex-start;
     }
     .data-table .num-cell,
-    .ledger-table .num {
+    .ledger-table .num,
+    .responsive-table .num-cell {
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
+    /* Footer (if any) also stacks */
+    .data-table tfoot,
+    .ledger-table tfoot {
+        display: block;
+        margin-top: 4px;
+    }
+    .data-table tfoot tr,
+    .ledger-table tfoot tr {
+        display: block;
+        padding: 12px 16px;
+        border: 1px dashed var(--rule);
+        border-radius: var(--radius);
+        background: var(--paper, #F7F3E8);
+        margin-bottom: 12px;
+    }
+    .data-table tfoot td,
+    .ledger-table tfoot td {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: none;
+        padding: 5px 0;
+    }
+    /* Let wrapper divs stop forcing horizontal scroll on mobile */
+    .ledger-table-wrap,
+    [style*="overflow-x:auto"] {
+        overflow-x: visible !important;
+    }
+}
+
+/* Laptop range (sidebar eats 240px): hide optional stock columns so the core
+   table keeps its pre-feature footprint; full 10-col table only where it fits */
+@media (min-width: 1024px) and (max-width: 1509.98px) {
+    .ledger-table .col-opt { display: none; }
 }
 
 /* Mobile Forms */
@@ -742,7 +851,7 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
         font-size: 16px; /* Prevents zoom on iOS */
     }
     .search-box { min-width: 100%; }
-    .filter-chips { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px; }
+    .filter-chips { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px; width: 100%; max-width: 100%; }
     .filter-chips .chip { white-space: nowrap; flex-shrink: 0; }
 }
 

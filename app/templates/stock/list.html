@@ -50,17 +50,37 @@
 
 <!-- Filter + Search -->
 <div class="card animate-on-scroll" style="margin-bottom:20px;">
-    <div class="card-pad" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div class="card-pad filter-bar">
         <div class="filter-chips" id="filter-chips">
-            <button type="button" class="chip active" data-status="all">All</button>
-            <button type="button" class="chip" data-status="in_stock">In Stock</button>
-            <button type="button" class="chip" data-status="sold">Sold</button>
+            <button type="button" class="chip {% if status_filter == 'all' %}active{% endif %}" data-status="all">All</button>
+            <button type="button" class="chip {% if status_filter == 'in_stock' %}active{% endif %}" data-status="in_stock">In Stock</button>
+            <button type="button" class="chip {% if status_filter == 'sold' %}active{% endif %}" data-status="sold">Sold</button>
         </div>
-        <div class="search-box" style="margin-left:auto;">
+        <div class="search-box filter-search">
             <i data-lucide="search" style="width:16px;height:16px;"></i>
-            <input type="text" id="stock-search-input" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:200px;">
+            <input type="text" id="stock-search-input" value="{{ search }}" placeholder="Search model, IMEI, supplier..." style="border:none;background:none;outline:none;font-family:var(--font-sans);font-size:13px;color:var(--ink);width:100%;min-width:0;">
         </div>
     </div>
+    {% if funder_names %}
+    <div class="card-pad" id="bulk-wrap" style="display:none;border-top:1px solid var(--rule);">
+        <form method="POST" action="{{ url_for('stock.assign_funder') }}" id="bulk-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="back_qs" value="{{ request.query_string.decode('utf-8') }}">
+            <div class="bulk-bar" id="bulk-bar">
+                <span class="bulk-count" id="bulk-count">0 selected</span>
+                <select name="partner_id" required style="min-width:200px;">
+                    <option value="0">Not assigned (clear)</option>
+                    {% for pid, pname in funder_names.items() %}
+                    <option value="{{ pid }}">{{ pname }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm" id="bulk-apply">
+                    <i data-lucide="user-check" style="width:14px;height:14px;"></i> Apply
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Stock Table -->
@@ -71,12 +91,18 @@
             <table class="ledger-table" id="stock-table">
                 <thead>
                     <tr>
+                        {% if funder_names %}
+                        <th style="width:36px;"><input type="checkbox" id="select-all" title="Select all"></th>
+                        {% endif %}
                         <th><i data-lucide="smartphone" style="width:12px;height:12px;"></i> Model</th>
-                        <th><i data-lucide="hash" style="width:12px;height:12px;"></i> IMEI</th>
+                        <th class="col-opt"><i data-lucide="hash" style="width:12px;height:12px;"></i> IMEI</th>
                         <th class="num"><i data-lucide="hash" style="width:12px;height:12px;"></i> Qty</th>
                         <th class="num"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Cost</th>
                         <th><i data-lucide="user" style="width:12px;height:12px;"></i> Supplier</th>
-                        <th><i data-lucide="calendar" style="width:12px;height:12px;"></i> Purchased</th>
+                        {% if funder_names %}
+                        <th><i data-lucide="user-check" style="width:12px;height:12px;"></i> Funded By</th>
+                        {% endif %}
+                        <th class="col-opt"><i data-lucide="calendar" style="width:12px;height:12px;"></i> Purchased</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -88,33 +114,60 @@
                         data-imei="{{ (item.imei or '')|lower }}" 
                         data-supplier="{{ (item.supplier_name or '')|lower }}"
                         data-customer="{{ (item.customer_name or '')|lower }}">
-                        <td style="font-weight:600;">{{ item.model_name }}</td>
-                        <td style="font-family:monospace;font-size:12px;">{{ item.imei or '—' }}</td>
-                        <td class="num">{{ item.quantity }}</td>
-                        <td class="num" style="color:var(--cashout);font-weight:600;">Rs {{ "{:,.0f}".format(item.cost_price|float) }}</td>
-                        <td>{{ item.supplier_name or '—' }}</td>
-                        <td style="white-space:nowrap;">{{ item.purchase_date.strftime('%d %b %Y') }}</td>
-                        <td>
+                        {% if funder_names %}
+                        <td data-label="Select"><input type="checkbox" class="row-select" value="{{ item.id }}" title="Select {{ item.model_name }}" style="width:17px;height:17px;accent-color:#2E5941;"></td>
+                        {% endif %}
+                        <td data-label="Model" style="font-weight:600;">{{ item.model_name }}</td>
+                        <td class="col-opt" data-label="IMEI" style="font-family:monospace;font-size:12px;">{{ item.imei or '—' }}</td>
+                        <td data-label="Qty" class="num">{{ item.quantity }}</td>
+                        <td data-label="Cost" class="num" style="color:var(--cashout);font-weight:600;">Rs {{ "{:,.0f}".format(item.cost_price|float) }}</td>
+                        <td data-label="Supplier">{{ item.supplier_name or '—' }}</td>
+                        {% if funder_names %}
+                        <td data-label="Funded By">
+                            {% set funder = funder_names.get(item.funded_by_partner_id) %}
+                            {% if funder %}
+                            <span class="badge badge-funded"><i data-lucide="user-check" style="width:10px;height:10px;"></i> {{ funder }}</span>
+                            {% else %}
+                            <span style="font-size:12px;color:var(--ink-faint);">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td class="col-opt" data-label="Purchased" style="white-space:nowrap;">{{ item.purchase_date.strftime('%d %b %Y') }}</td>
+                        <td data-label="Status">
                             {% if item.status == 'in_stock' %}
                                 <span class="badge badge-instock"><i data-lucide="package" style="width:10px;height:10px;"></i> In Stock</span>
                             {% else %}
                                 <span class="badge badge-sold"><i data-lucide="check-circle" style="width:10px;height:10px;"></i> Sold</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Actions">
                             {% if item.status == 'in_stock' %}
-                            <div style="display:flex;gap:6px;">
+                            <div style="display:flex;gap:6px;align-items:center;">
                                 <a href="{{ url_for('stock.stock_out', item_id=item.id) }}" class="btn btn-primary btn-sm">
                                     <i data-lucide="shopping-cart" style="width:14px;height:14px;"></i> Sell
                                 </a>
-                                <a href="{{ url_for('stock.edit_stock', item_id=item.id) }}" class="btn btn-outline btn-sm">
+                                <a href="{{ url_for('stock.edit_stock', item_id=item.id) }}" class="btn btn-outline btn-sm" title="Edit phone">
                                     <i data-lucide="pencil" style="width:14px;height:14px;"></i>
                                 </a>
+                                <form method="POST" action="{{ url_for('stock.delete_stock', item_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Delete this phone completely?\n\nThis removes ALL linked cashbook entries (paid to supplier, purchase expenses) and khata entries (pending amounts), then recalculates every balance.\n\nThis cannot be undone.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline btn-sm" style="color:var(--cashout);border-color:var(--cashout);" title="Delete phone and all linked entries">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                                    </button>
+                                </form>
                             </div>
                             {% else %}
-                            <span style="font-size:12px;color:var(--ink-faint);">
-                                {{ item.customer_name or 'Cash' }} — Rs {{ "{:,.0f}".format(item.sale_price|float) }}
-                            </span>
+                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                <span style="font-size:12px;color:var(--ink-faint);white-space:nowrap;">
+                                    {{ item.customer_name or 'Cash' }} — Rs {{ "{:,.0f}".format(item.sale_price|float) }}
+                                </span>
+                                <form method="POST" action="{{ url_for('stock.unsell_stock', item_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Undo this sale?\n\nThis removes the sale cash entries (money received, sale expense) and any pending receivable from the customer, recalculates balances, and puts the phone back in stock.\n\nThe purchase records are kept.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline btn-sm" title="Undo sale — phone returns to stock">
+                                        <i data-lucide="undo-2" style="width:14px;height:14px;"></i> Un-sell
+                                    </button>
+                                </form>
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
@@ -144,13 +197,14 @@
     const table = document.getElementById('stock-table');
     const noResults = document.getElementById('no-results');
     
-    if (!searchInput || !table) return;
+    if (!table) return;
     
     const rows = Array.from(table.querySelectorAll('tbody tr'));
-    let currentFilter = 'all';
+    const activeChip = document.querySelector('#filter-chips .chip.active');
+    let currentFilter = activeChip ? activeChip.dataset.status : 'all';
     
     function filterAndSearch() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
         let visibleCount = 0;
         
         rows.forEach(row => {
@@ -160,10 +214,7 @@
             const supplier = row.dataset.supplier;
             const customer = row.dataset.customer;
             
-            // Check status filter
             const matchesFilter = currentFilter === 'all' || status === currentFilter;
-            
-            // Check search term
             const matchesSearch = !searchTerm || 
                 model.includes(searchTerm) || 
                 imei.includes(searchTerm) || 
@@ -178,8 +229,7 @@
             }
         });
         
-        // Show/hide "no results" message
-        if (table && noResults) {
+        if (noResults) {
             if (visibleCount === 0) {
                 table.style.display = 'none';
                 noResults.style.display = 'block';
@@ -190,10 +240,10 @@
         }
     }
     
-    // Search input handler
-    searchInput.addEventListener('input', filterAndSearch);
+    if (searchInput) {
+        searchInput.addEventListener('input', filterAndSearch);
+    }
     
-    // Filter chip handlers
     filterChips.forEach(chip => {
         chip.addEventListener('click', function() {
             filterChips.forEach(c => c.classList.remove('active'));
@@ -203,10 +253,60 @@
         });
     });
     
-    // Initialize icons after filtering
+    // Apply filter on load (for server-rendered state + pre-filled search)
+    filterAndSearch();
+    
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+})();
+
+// Bulk assign-funder bar
+(function() {
+    const bulkForm = document.getElementById('bulk-form');
+    if (!bulkForm) return;
+    const bulkWrap = document.getElementById('bulk-wrap');
+    const bulkCount = document.getElementById('bulk-count');
+    const applyBtn = document.getElementById('bulk-apply');
+    const selectAll = document.getElementById('select-all');
+    const boxes = Array.from(document.querySelectorAll('.row-select'));
+
+    const isVisible = b => (b.closest('tr') || {}).style?.display !== 'none';
+
+    function refresh() {
+        const checked = boxes.filter(b => b.checked);
+        bulkCount.textContent = checked.length + ' selected';
+        bulkWrap.style.display = checked.length > 0 ? '' : 'none';
+        applyBtn.disabled = checked.length === 0;
+        if (selectAll) {
+            const vis = boxes.filter(isVisible);
+            selectAll.checked = vis.length > 0 && vis.every(b => b.checked);
+        }
+    }
+
+    boxes.forEach(b => b.addEventListener('change', refresh));
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            boxes.forEach(b => { if (isVisible(b)) b.checked = selectAll.checked; });
+            refresh();
+        });
+    }
+
+    bulkForm.addEventListener('submit', function(e) {
+        const checked = boxes.filter(b => b.checked);
+        if (!checked.length) { e.preventDefault(); return; }
+        bulkForm.querySelectorAll('input[name="item_ids"]').forEach(i => i.remove());
+        checked.forEach(b => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'item_ids';
+            inp.value = b.value;
+            bulkForm.appendChild(inp);
+        });
+    });
+
+    refresh();
 })();
 </script>
 {% endblock %}

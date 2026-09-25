@@ -74,9 +74,10 @@
             </div>
 
             {% if p.status == 'open' %}
-            <form method="POST" action="{{ url_for('shareholders.lock_period_route', period_id=p.id) }}"
+            <form method="POST" action="{{ url_for('shareholders.lock_period_view') }}"
                   onsubmit="return confirm('WARNING: Locking is IRREVERSIBLE.\n\nOnce locked, these figures will never change.\n\nProceed?')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="period_id" value="{{ p.id }}">
                 <button class="btn btn-gold btn-sm" style="white-space: nowrap;">&#128274; Lock Period</button>
             </form>
             {% else %}

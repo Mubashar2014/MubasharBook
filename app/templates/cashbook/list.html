@@ -27,6 +27,7 @@
                 <th class="num">Cash In</th>
                 <th class="num">Cash Out</th>
                 <th class="num">Balance</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -59,15 +60,28 @@
                     {% endif %}
                 </td>
                 <td data-label="Balance" class="num"><strong>{{ 'Rs {:,.0f}'.format(entry.balance_after | float) if entry.balance_after is not none else 'Rs 0' }}</strong></td>
+                <td data-label="Actions">
+                    {% if entry.linked_stock_id is none and entry.description != 'Opening capital' %}
+                    <form method="POST" action="{{ url_for('cashbook.delete_entry', entry_id=entry.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline btn-sm" style="color:var(--cashout);border-color:var(--cashout);"
+                                title="Delete this entry"
+                                onclick="return confirm('Delete this cash entry? The running balance will be recalculated.')">
+                            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr style="border-top:3px double var(--ink);font-weight:700;">
                 <td colspan="2">Subtotals</td>
-                <td class="num" style="color:var(--cashin);">+{{ 'Rs {:,.0f}'.format(subtotal_in) }}</td>
-                <td class="num" style="color:var(--cashout);">-{{ 'Rs {:,.0f}'.format(subtotal_out) }}</td>
+                <td data-label="Cash In" class="num" style="color:var(--cashin);">+{{ 'Rs {:,.0f}'.format(subtotal_in) }}</td>
+                <td data-label="Cash Out" class="num" style="color:var(--cashout);">-{{ 'Rs {:,.0f}'.format(subtotal_out) }}</td>
                 <td class="num"></td>
+                <td></td>
             </tr>
         </tfoot>
     </table>

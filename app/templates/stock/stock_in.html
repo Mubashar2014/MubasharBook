@@ -48,6 +48,19 @@
                 {{ form.supplier_name(placeholder="Type supplier name to track in khata, or leave blank for full cash purchase") }}
             </div>
 
+            <!-- Funding -->
+            {% if investors %}
+            <div class="field">
+                <label><i data-lucide="user-check" style="width:14px;height:14px;"></i> Funded by <span style="color:var(--ink-faint);font-size:11px;">optional — investor who funded this purchase</span></label>
+                <select name="funded_by_partner_id">
+                    <option value="0" {% if not selected_funder %}selected{% endif %}>Not assigned</option>
+                    {% for inv in investors %}
+                    <option value="{{ inv.id }}" {% if selected_funder == inv.id %}selected{% endif %}>{{ inv.name }} — {{ "%.1f"|format(inv.investment_ratio or 0) }}%</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
             <!-- Payment -->
             <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
                 <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;">

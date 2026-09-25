@@ -110,7 +110,7 @@
 
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-pad">
-        <form method="POST" action="{{ url_for('shareholders.update_split_rule') }}">
+        <form method="POST" action="{{ url_for('shareholders.update_ratio') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
@@ -131,7 +131,7 @@
 
             <div class="field" style="max-width: 320px;">
                 <label>Management Base % (0–60%)</label>
-                <input type="number" name="management_base_pct" value="{{ split_rule.management_base_pct|round(1) }}" min="0" max="60" step="0.5" required
+                <input type="number" name="management_base_pct" value="{{ (split_rule.management_base_pct if split_rule else 30)|round(1) }}" min="0" max="60" step="0.5" required
                        style="font-size: 18px; font-weight: 700; padding: 12px 14px;">
             </div>
 

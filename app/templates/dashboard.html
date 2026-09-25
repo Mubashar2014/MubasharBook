@@ -220,19 +220,19 @@
                 <tbody>
                     {% for entry in recent_entries %}
                     <tr>
-                        <td style="white-space:nowrap;">
+                        <td data-label="Date" style="white-space:nowrap;">
                             <i data-lucide="calendar" style="width:13px;height:13px;color:var(--ink-faint);margin-right:4px;"></i>
                             {{ entry.entry_date.strftime('%d %b') }}
                         </td>
-                        <td style="font-weight:500;">{{ entry.description }}</td>
-                        <td>
+                        <td data-label="Description" style="font-weight:500;">{{ entry.description }}</td>
+                        <td data-label="Type">
                             {% if entry.entry_type == 'in' %}
                                 <span class="badge badge-instock"><i data-lucide="arrow-down-left" style="width:11px;height:11px;"></i> Cash In</span>
                             {% else %}
                                 <span class="badge badge-sold"><i data-lucide="arrow-up-right" style="width:11px;height:11px;"></i> Cash Out</span>
                             {% endif %}
                         </td>
-                        <td class="num" style="font-weight:700; {% if entry.entry_type == 'in' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
+                        <td data-label="Amount" class="num" style="font-weight:700; {% if entry.entry_type == 'in' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
                             {% if entry.entry_type == 'in' %}+{% else %}-{% endif %} Rs {{ "{:,.0f}".format(entry.amount|float) }}
                         </td>
                     </tr>
