@@ -81,16 +81,11 @@ def signup():
         ensure_opening_cash(shop)
         db.session.commit()
 
-        # Auto-verify for development (remove when email is configured)
-        user.is_verified = True
-        user.clear_verification_token()
-        db.session.commit()
+        # Send verification email
+        send_verification_email(user)
 
-        # Log the user in automatically after signup
-        login_user(user)
-        
-        flash('Your 7-day free trial has started!', 'success')
-        return redirect(url_for('main.dashboard'))
+        flash('Account created! Please check your email to verify and start your trial.', 'success')
+        return redirect(url_for('auth.verify_email', email=user.email))
 
     return render_template('auth/signup.html', form=form)
 
@@ -102,17 +97,24 @@ def verify_email_token(token):
         flash('Invalid or expired verification link.', 'danger')
         return redirect(url_for('auth.verify_email'))
 
-    if user.is_verified:
+    if user.email_verified_at:
         flash('Email already verified. Please log in.', 'info')
         return redirect(url_for('auth.login'))
 
+    # Verify email and start trial
     user.verify_email()
+    
+    # Start trial now (moved from signup)
+    if not user.trial_end:
+        user.start_trial(days=current_app.config.get('TRIAL_DAYS', 7))
+    
     db.session.commit()
 
     # Send welcome email
     send_welcome_email(user)
 
-    return render_template('auth/verify_email.html', success=True)
+    flash('Email verified! Your 7-day free trial has started. You can now log in.', 'success')
+    return redirect(url_for('auth.login'))
 
 
 @auth_bp.route('/verify', methods=['GET', 'POST'])
@@ -134,7 +136,7 @@ def resend_verification():
         flash('If an account exists, a verification email has been sent.', 'info')
         return redirect(url_for('auth.verify_email', email=email))
 
-    if user.is_verified:
+    if user.email_verified_at:
         flash('Email already verified. Please log in.', 'info')
         return redirect(url_for('auth.login'))
 
@@ -199,6 +201,11 @@ def login():
         if not user.is_active:
             flash('Your account has been deactivated.', 'warning')
             return redirect(url_for('auth.login'))
+        
+        # Check if email is verified
+        if not user.email_verified_at:
+            flash('Please verify your email before logging in. Check your inbox.', 'warning')
+            return redirect(url_for('auth.verify_email', email=user.email))
 
         login_user(user)
         user.mark_login()

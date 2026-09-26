@@ -187,7 +187,7 @@
         <div style="font-family:var(--font-sans); font-weight:700; font-size:15px; color:var(--cashout);">Your trial has expired</div>
         <div style="font-family:var(--font-sans); font-size:13.5px; color:var(--ink-soft); margin-top:2px;">You can view data but cannot make changes. Subscribe to continue editing.</div>
     </div>
-    <a href="#" class="btn btn-gold btn-sm" style="margin-left:auto; white-space:nowrap;">
+    <a href="{{ url_for('subscription.subscribe') }}" class="btn btn-gold btn-sm" style="margin-left:auto; white-space:nowrap;">
         <i data-lucide="credit-card" style="width:14px;height:14px;"></i> Subscribe Now
     </a>
 </div>

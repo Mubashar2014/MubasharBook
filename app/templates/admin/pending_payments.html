@@ -1,0 +1,149 @@
+{% extends "admin_layout.html" %}
+{% block title %}Pending Payments — Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 40px auto;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">💳 Pending Payment Verifications</h1>
+        <p style="color: var(--ink-faint);">Review and approve user payment submissions</p>
+    </div>
+
+    {% if payments %}
+    <div style="display: grid; gap: 20px;">
+        {% for payment in payments %}
+        <div class="card" style="background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 24px;">
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start;">
+                <!-- Payment Info -->
+                <div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <h3 style="font-family: var(--font-serif); font-size: 20px; margin: 0;">
+                            {{ payment.user.owner_name }}
+                        </h3>
+                        <span class="badge" style="background: var(--gold-tint); color: var(--gold-deep);">⏳ Pending</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Amount</div>
+                            <div style="font-weight: 700; font-size: 20px; color: var(--gold-deep);">Rs {{ "{:,.0f}".format(payment.amount) }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Plan</div>
+                            <div style="font-weight: 600;">{{ payment.description }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Payment Method</div>
+                            <div style="font-weight: 600;">{{ payment.payment_method|title }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Submitted</div>
+                            <div style="font-weight: 600;">{{ payment.created_at.strftime('%d %b, %I:%M %p') }}</div>
+                        </div>
+                    </div>
+
+                    {% if payment.gateway_transaction_id %}
+                    <div style="margin-bottom: 8px;">
+                        <span style="font-size: 13px; color: var(--ink-faint);">Transaction ID:</span>
+                        <span style="font-weight: 600; font-size: 13px;">{{ payment.gateway_transaction_id }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if payment.notes %}
+                    <div style="margin-bottom: 8px;">
+                        <span style="font-size: 13px; color: var(--ink-faint);">Notes:</span>
+                        <span style="font-size: 13px;">{{ payment.notes }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div style="margin-top: 16px;">
+                        <span style="font-size: 13px; color: var(--ink-faint);">User Email:</span>
+                        <span style="font-size: 13px;">{{ payment.user.email }}</span>
+                    </div>
+                </div>
+
+                <!-- Payment Proof -->
+                <div style="text-align: center;">
+                    {% if payment.payment_proof %}
+                    <div style="margin-bottom: 12px;">
+                        <a href="{{ url_for('static', filename='payment_proofs/' + payment.payment_proof) }}" target="_blank">
+                            <img src="{{ url_for('static', filename='payment_proofs/' + payment.payment_proof) }}" 
+                                 alt="Payment Proof" 
+                                 style="max-width: 200px; max-height: 300px; border-radius: var(--radius); border: 1px solid var(--rule); cursor: pointer;">
+                        </a>
+                        <div style="font-size: 12px; color: var(--ink-faint); margin-top: 8px;">Click to view full size</div>
+                    </div>
+                    {% else %}
+                    <div style="padding: 40px; background: var(--paper-alt); border-radius: var(--radius); color: var(--ink-faint);">
+                        No proof uploaded
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--rule);">
+                <form method="POST" action="{{ url_for('admin.verify_payment', payment_id=payment.id) }}" style="flex: 1;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary btn-block" onclick="return confirm('Verify and activate subscription for {{ payment.user.owner_name }}?')">
+                        <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                        Verify & Activate
+                    </button>
+                </form>
+
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('reject-form-{{ payment.id }}').style.display='block'">
+                    <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                    Reject
+                </button>
+
+                <a href="{{ url_for('admin.user_detail', user_id=payment.user_id) }}" class="btn btn-outline">
+                    <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+                    View User
+                </a>
+            </div>
+
+            <!-- Reject Form (hidden by default) -->
+            <div id="reject-form-{{ payment.id }}" style="display: none; margin-top: 16px; padding: 16px; background: var(--cashout-tint); border-radius: var(--radius);">
+                <form method="POST" action="{{ url_for('admin.reject_payment', payment_id=payment.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Reason for rejection:</label>
+                    <textarea name="reason" rows="2" placeholder="e.g., Amount mismatch, invalid proof..." required style="width: 100%; padding: 10px; border: 1px solid var(--rule); border-radius: var(--radius); margin-bottom: 12px;"></textarea>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn btn-primary" style="background: var(--cashout);" onclick="return confirm('Reject this payment?')">
+                            Confirm Rejection
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="document.getElementById('reject-form-{{ payment.id }}').style.display='none'">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div style="margin-top: 32px; text-align: center;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.pending_payments', page=pagination.prev_num) }}" class="btn btn-secondary">← Previous</a>
+        {% endif %}
+        <span style="margin: 0 16px; color: var(--ink-faint);">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('admin.pending_payments', page=pagination.next_num) }}" class="btn btn-secondary">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card" style="background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 60px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+        <h3 style="font-family: var(--font-serif); font-size: 24px; margin-bottom: 8px;">All Clear!</h3>
+        <p style="color: var(--ink-faint);">No pending payments to verify.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 32px; text-align: center;">
+        <a href="{{ url_for('admin.dashboard') }}" style="color: var(--ink-faint);">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

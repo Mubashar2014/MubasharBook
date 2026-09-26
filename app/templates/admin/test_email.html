@@ -1,0 +1,64 @@
+{% extends "admin_layout.html" %}
+{% block title %}Test Email Sending — Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 40px auto;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">📧 Test Email Sending</h1>
+        <p style="color: var(--ink-faint);">Send test emails to verify your email configuration is working.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}" style="padding: 16px; border-radius: var(--radius); margin-bottom: 20px; {% if category == 'success' %}background: #F0F9F4; color: #1B5E3A; border: 1px solid #D1EBD8;{% elif category == 'danger' %}background: #FDF0EE; color: #A13D2E; border: 1px solid #F5D6D4;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 32px;">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="field" style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Select User</label>
+                <select name="user_id" required style="width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius); font-family: var(--font-sans);">
+                    <option value="">Choose a user...</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.owner_name }} ({{ user.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field" style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Email Type</label>
+                <select name="email_type" required style="width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius); font-family: var(--font-sans);">
+                    <option value="">Choose email type...</option>
+                    <option value="verification">Email Verification</option>
+                    <option value="welcome">Welcome Email</option>
+                    <option value="trial_3days">Trial Reminder (3 days left)</option>
+                    <option value="trial_1day">Trial Reminder (1 day left)</option>
+                    <option value="trial_expired">Trial Expired</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 16px;">
+                <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+                Send Test Email
+            </button>
+        </form>
+    </div>
+
+    <div style="margin-top: 32px; text-align: center;">
+        <a href="{{ url_for('admin.email_logs') }}" class="btn btn-secondary">
+            <i data-lucide="list" style="width: 18px; height: 18px;"></i>
+            View Email Logs
+        </a>
+        <a href="{{ url_for('admin.dashboard') }}" style="margin-left: 12px; color: var(--ink-faint);">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

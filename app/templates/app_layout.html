@@ -36,8 +36,8 @@
         <a class="side-link {% if request.endpoint and 'shareholders' in request.endpoint %}active{% endif %}" href="{{ url_for('shareholders.setup') }}">
             <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Shareholders <span class="pl-tag">PRO</span>
         </a>
-        <a class="side-link" href="#">
-            <span class="ic"><i data-lucide="settings" style="width:18px;height:18px;"></i></span> Settings
+        <a class="side-link" href="{{ url_for('subscription.my_subscription') }}">
+            <span class="ic"><i data-lucide="credit-card" style="width:18px;height:18px;"></i></span> My Subscription
         </a>
     </aside>
 

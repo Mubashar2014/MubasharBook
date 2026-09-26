@@ -140,6 +140,9 @@ def create_app(config_name=None):
     from app.admin import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
+    from app.subscription import subscription_bp
+    app.register_blueprint(subscription_bp, url_prefix='/subscription')
+
     # Import models so SQLAlchemy knows about all tables
     from app.models import user, shop, stock, cashbook, khata, expense, shareholder, subscription
 
@@ -150,5 +153,10 @@ def create_app(config_name=None):
     # Make format_currency available in all templates
     from app.utils import format_currency
     app.jinja_env.globals['format_currency'] = format_currency
+
+    # Initialize background scheduler (only if not in testing mode)
+    if not app.config.get('TESTING', False):
+        from app.scheduler import init_scheduler
+        init_scheduler(app)
 
     return app

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your trial ends tomorrow</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1C1B19; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #F7F3E8; border-radius: 16px; padding: 40px; border: 1px solid #DDD4B8;">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: #E53935; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px;">⚠️</div>
+            <h1 style="font-family: 'Fraunces', serif; font-size: 28px; margin: 0; color: #1C1B19;">Trial ends tomorrow!</h1>
+            <p style="color: #A13D2E; margin-top: 8px; font-size: 18px; font-weight: 600;">Last day of free access</p>
+        </div>
+
+        <div style="background: #FFFDF6; border: 2px solid #E53935; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="color: #5A5748; margin: 0 0 16px;">Hi {{ user.owner_name }},</p>
+            <p style="color: #5A5748; margin: 0 0 16px;">This is your <strong style="color: #E53935;">final reminder</strong> — your free trial ends <strong>tomorrow</strong>.</p>
+            
+            <div style="background: #FFEBEE; border-left: 4px solid #E53935; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                <p style="margin: 0 0 8px; color: #A13D2E; font-weight: 600;">⚠️ What happens after trial ends:</p>
+                <ul style="margin: 8px 0 0; color: #A13D2E; font-size: 14px; padding-left: 20px;">
+                    <li>Your account becomes <strong>read-only</strong></li>
+                    <li>You can view data but can't add new entries</li>
+                    <li>Subscribe to keep full access</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="{{ dashboard_url }}/settings" style="display: inline-block; background: #E53935; color: #fff; padding: 16px 36px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(229,57,53,0.3);">
+                    Subscribe Now — Starting Rs 2,000/month
+                </a>
+            </div>
+            
+            <p style="color: #8A8578; margin: 20px 0 0; font-size: 13px; text-align: center;">
+                No credit card required for trial. Cancel anytime after subscribing.
+            </p>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #1C1B19;">📊 Your data is safe</h3>
+            <p style="margin: 0; color: #5A5748; font-size: 14px;">All your stock records, cashbook entries, and reports will be preserved. Subscribe to continue accessing them.</p>
+        </div>
+
+        <div style="background: #F0F9F4; border: 1px solid #2E5941; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #2E5941;">✅ Why subscribe?</h3>
+            <ul style="margin: 0; color: #2E5941; font-size: 14px; padding-left: 20px;">
+                <li>Continue managing stock & sales</li>
+                <li>Track all receivables & payables</li>
+                <li>Generate profit reports</li>
+                <li>Manage investor profit splits (Premium)</li>
+            </ul>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #2E5941;">
+                <p style="margin: 0 0 8px; color: #2E5941; font-size: 15px; font-weight: 600;">
+                    <strong>Basic:</strong> Rs 2,000/month — Perfect for single shop
+                </p>
+                <p style="margin: 0; color: #2E5941; font-size: 15px; font-weight: 600;">
+                    <strong>Premium:</strong> Rs 3,500/month — For investors & partners
+                </p>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #8A8578; font-size: 12px; border-top: 1px solid #DDD4B8; padding-top: 20px;">
+            <p style="margin: 0 0 8px;">© 2026 Mubashar's Book</p>
+            <p style="margin: 0;">Need help? Reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
