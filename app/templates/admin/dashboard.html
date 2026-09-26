@@ -105,7 +105,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0 responsive-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -124,9 +124,9 @@
                         {% for user in users %}
                         {% set sub = user.shop.subscription if user.shop else none %}
                         <tr>
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.owner_name }}</td>
-                            <td>
+                            <td data-label="ID">{{ user.id }}</td>
+                            <td data-label="Name">{{ user.owner_name }}</td>
+                            <td data-label="Email">
                                 {{ user.email }}
                                 {% if user.email_verified_at %}
                                 <span class="badge bg-success">✓</span>
@@ -134,9 +134,9 @@
                                 <span class="badge bg-warning">Unverified</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.phone }}</td>
-                            <td>{{ user.shop.name if user.shop else '-' }}</td>
-                            <td>
+                            <td data-label="Phone">{{ user.phone }}</td>
+                            <td data-label="Shop">{{ user.shop.name if user.shop else '-' }}</td>
+                            <td data-label="Status">
                                 {% if sub %}
                                     {% if sub.status == 'trial' %}
                                     <span class="badge bg-info">Trial</span>
@@ -153,7 +153,7 @@
                                 <span class="badge bg-secondary">No Sub</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Trial Ends">
                                 {% if user.trial_end %}
                                 {{ user.trial_end.strftime('%Y-%m-%d') }}
                                 {% if sub and sub.status == 'trial' %}
@@ -170,17 +170,17 @@
                                 -
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Joined">
                                 <small>{{ user.created_at.strftime('%Y-%m-%d') }}</small>
                             </td>
-                            <td>
+                            <td data-label="Last Login">
                                 {% if user.last_login_at %}
                                 <small>{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') }}</small>
                                 {% else %}
                                 <small class="text-muted">Never</small>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Actions">
                                 <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-sm btn-primary">View</a>
                             </td>
                         </tr>

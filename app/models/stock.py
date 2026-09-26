@@ -40,6 +40,7 @@ class StockItem(db.Model):
     sale_cash_entry_id = db.Column(db.Integer, nullable=True)
     sale_expense_cash_entry_id = db.Column(db.Integer, nullable=True)
     sale_khata_entry_id = db.Column(db.Integer, nullable=True)
+    funded_by_partner_id = db.Column(db.Integer, nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

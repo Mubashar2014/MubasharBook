@@ -1,3 +1,4 @@
+from app.extensions import db
 from app.models.cashbook import CashEntry
 
 
@@ -136,3 +137,121 @@ def test_cashbook_list_page_shows_entries(logged_in_client, app):
     resp = logged_in_client.get('/cashbook/')
     assert resp.status_code == 200
     assert b'Visible Entry' in resp.data
+
+
+def test_delete_manual_entry(logged_in_client, app):
+    logged_in_client.post('/cashbook/add', data={
+        'entry_type': 'in',
+        'amount': 40000,
+        'description': 'Manual Entry To Delete',
+        'entry_date': '2024-06-15',
+        'linked_stock_id': 0,
+    })
+
+    with app.app_context():
+        entry = CashEntry.query.filter_by(description='Manual Entry To Delete').first()
+        assert entry is not None
+        entry_id = entry.id
+
+    resp = logged_in_client.post(f'/cashbook/{entry_id}/delete', follow_redirects=False)
+    assert resp.status_code == 302
+
+    with app.app_context():
+        assert db.session.get(CashEntry, entry_id) is None
+
+
+def test_delete_recalculates_running_balance(logged_in_client, app):
+    logged_in_client.post('/cashbook/add', data={
+        'entry_type': 'in',
+        'amount': 50000,
+        'description': 'Keep Me',
+        'entry_date': '2024-06-15',
+        'linked_stock_id': 0,
+    })
+    logged_in_client.post('/cashbook/add', data={
+        'entry_type': 'in',
+        'amount': 20000,
+        'description': 'Delete Me',
+        'entry_date': '2024-06-16',
+        'linked_stock_id': 0,
+    })
+
+    with app.app_context():
+        delete_me = CashEntry.query.filter_by(description='Delete Me').first()
+        entry_id = delete_me.id
+
+    logged_in_client.post(f'/cashbook/{entry_id}/delete')
+
+    with app.app_context():
+        from app.models.shop import Shop
+        shop = Shop.query.first()
+        # Opening 100000 + Keep Me 50000 = 150000 after delete
+        entries = CashEntry.query.filter_by(shop_id=shop.id).order_by(CashEntry.id.asc()).all()
+        assert len(entries) == 2
+        last = entries[-1]
+        assert last.description == 'Keep Me'
+        assert float(last.balance_after) == 150000.0
+
+
+def test_delete_opening_capital_refused(logged_in_client, app):
+    logged_in_client.get('/dashboard')
+
+    with app.app_context():
+        opening = CashEntry.query.filter_by(description='Opening capital').first()
+        assert opening is not None
+        opening_id = opening.id
+
+    resp = logged_in_client.post(f'/cashbook/{opening_id}/delete', follow_redirects=True)
+    assert resp.status_code == 200
+
+    with app.app_context():
+        assert db.session.get(CashEntry, opening_id) is not None
+
+
+def test_delete_stock_linked_entry_refused(logged_in_client, app):
+    logged_in_client.post('/stock/in', data={
+        'model_name': 'Delete Test Phone',
+        'quantity': 1,
+        'cost_price': 30000,
+        'purchase_date': '2026-09-23',
+        'supplier_name': '',
+        'purchase_paid': 30000,
+        'purchase_expense_desc': '',
+        'purchase_expense_amount': 0,
+    })
+
+    with app.app_context():
+        linked = CashEntry.query.filter(CashEntry.linked_stock_id.isnot(None)).first()
+        assert linked is not None
+        linked_id = linked.id
+
+    logged_in_client.post(f'/cashbook/{linked_id}/delete', follow_redirects=True)
+
+    with app.app_context():
+        assert db.session.get(CashEntry, linked_id) is not None
+
+
+def test_delete_other_shops_entry_refused(logged_in_client, app, second_user):
+    logged_in_client.post('/cashbook/add', data={
+        'entry_type': 'in',
+        'amount': 10000,
+        'description': 'Other Shop Entry',
+        'entry_date': '2024-06-15',
+        'linked_stock_id': 0,
+    })
+
+    with app.app_context():
+        entry = CashEntry.query.filter_by(description='Other Shop Entry').first()
+        assert entry is not None
+        entry_id = entry.id
+
+    # second_user has their own shop — cannot delete first user's entry
+    # (nested app context gives a fresh `g` so Flask-Login reloads identity)
+    with app.app_context():
+        other_client = app.test_client()
+        with other_client.session_transaction() as sess:
+            sess['_user_id'] = str(second_user.id)
+        other_client.post(f'/cashbook/{entry_id}/delete', follow_redirects=True)
+
+    with app.app_context():
+        assert db.session.get(CashEntry, entry_id) is not None

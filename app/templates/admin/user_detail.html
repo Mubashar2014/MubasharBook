@@ -281,7 +281,7 @@
                 <div class="card-body p-0">
                     {% if payments %}
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm mb-0 responsive-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -296,11 +296,11 @@
                             <tbody>
                                 {% for payment in payments %}
                                 <tr>
-                                    <td>{{ payment.id }}</td>
-                                    <td>{{ payment.created_at.strftime('%Y-%m-%d') }}</td>
-                                    <td>Rs {{ "{:,.0f}".format(payment.amount) }}</td>
-                                    <td>{{ payment.payment_method|replace('_', ' ')|title }}</td>
-                                    <td>
+                                    <td data-label="ID">{{ payment.id }}</td>
+                                    <td data-label="Date">{{ payment.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td data-label="Amount">Rs {{ "{:,.0f}".format(payment.amount) }}</td>
+                                    <td data-label="Method">{{ payment.payment_method|replace('_', ' ')|title }}</td>
+                                    <td data-label="Status">
                                         {% if payment.status == 'completed' %}
                                         <span class="badge bg-success">Completed</span>
                                         {% elif payment.status == 'pending' %}
@@ -311,8 +311,8 @@
                                         <span class="badge bg-secondary">{{ payment.status|title }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ payment.gateway or '-' }}</td>
-                                    <td><small>{{ payment.notes or '-' }}</small></td>
+                                    <td data-label="Gateway">{{ payment.gateway or '-' }}</td>
+                                    <td data-label="Notes"><small>{{ payment.notes or '-' }}</small></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -336,7 +336,7 @@
                 <div class="card-body p-0">
                     {% if admin_logs %}
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm mb-0 responsive-table">
                             <thead>
                                 <tr>
                                     <th>Date/Time</th>
@@ -348,10 +348,10 @@
                             <tbody>
                                 {% for log in admin_logs %}
                                 <tr>
-                                    <td><small>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
-                                    <td><small>Admin #{{ log.admin_user_id }}</small></td>
-                                    <td><span class="badge bg-info">{{ log.action|replace('_', ' ')|title }}</span></td>
-                                    <td><small>{{ log.description }}</small></td>
+                                    <td data-label="Date/Time"><small>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                                    <td data-label="Admin"><small>Admin #{{ log.admin_user_id }}</small></td>
+                                    <td data-label="Action"><span class="badge bg-info">{{ log.action|replace('_', ' ')|title }}</span></td>
+                                    <td data-label="Description"><small>{{ log.description }}</small></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

@@ -4,7 +4,7 @@
 <div style="min-height:100vh; display:flex; flex-direction:column; background:var(--paper-alt);">
 
     <!-- Topbar -->
-    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--ink); color:#fff; border-bottom:3px solid var(--gold);">
+    <div class="inv-topbar" style="display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--ink); color:#fff; border-bottom:3px solid var(--gold);">
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="brand-mark" style="width:30px; height:30px; font-size:15px;">M</div>
             <span style="font-family:'Fraunces',serif; font-weight:700; font-size:17px;">Mubashar's Book</span>
@@ -23,7 +23,7 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div style="background:var(--card); border-bottom:1px solid var(--rule); padding:0 28px; display:flex; gap:0;">
+    <div class="inv-tabs" style="background:var(--card); border-bottom:1px solid var(--rule); padding:0 28px; display:flex; gap:0;">
         <a href="{{ url_for('investor.dashboard') }}"
            style="padding:14px 20px; font-size:13.5px; font-weight:600; border-bottom:3px solid {% if request.endpoint == 'investor.dashboard' %}var(--ledger){% else %}transparent{% endif %}; color:{% if request.endpoint == 'investor.dashboard' %}var(--ink){% else %}var(--ink-faint){% endif %}; transition:0.15s;">
             Dashboard
@@ -56,14 +56,25 @@
     {% endwith %}
 
     <!-- Content -->
-    <div style="flex:1; padding:24px 28px;">
+    <div class="inv-content" style="flex:1; padding:24px 28px;">
         {% block investor_content %}{% endblock %}
     </div>
 
     <!-- Footer -->
-    <div style="padding:18px 28px; background:var(--card); border-top:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--ink-faint);">
+    <div class="inv-footer" style="padding:18px 28px; background:var(--card); border-top:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--ink-faint);">
         <span>&copy; 2026 Mubashar's Book</span>
         <span>Investor Portal</span>
     </div>
 </div>
+
+<style>
+@media (max-width: 575.98px) {
+    .inv-topbar { flex-wrap: wrap; gap: 10px; padding: 12px 16px !important; }
+    .inv-topbar > div:last-child { margin-left: auto; }
+    .inv-tabs { padding: 0 12px !important; overflow-x: auto; }
+    .inv-tabs a { white-space: nowrap; flex-shrink: 0; padding: 13px 14px !important; }
+    .inv-content { padding: 16px !important; }
+    .inv-footer { flex-direction: column; gap: 6px; padding: 14px 16px !important; }
+}
+</style>
 {% endblock %}

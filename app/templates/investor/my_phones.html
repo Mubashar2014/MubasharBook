@@ -29,7 +29,7 @@
                     <td data-label="Model" style="font-weight:600;">{{ phone.model_name }}</td>
                     <td data-label="IMEI" style="font-family:monospace; font-size:12px; color:var(--ink-faint);">{{ phone.imei or '—' }}</td>
                     <td class="num-cell" data-label="Cost Price">Rs {{ "{:,.0f}".format(phone.cost_price | float) }}</td>
-                    <td class="num-cell" data-label="Sale Price">Rs {{ "{:,.0f}".format(phone.sale_price | float) }}</td>
+                    <td class="num-cell" data-label="Sale Price">{% if phone.sale_price is not none %}Rs {{ "{:,.0f}".format(phone.sale_price | float) }}{% else %}—{% endif %}</td>
                     <td data-label="Status">
                         {% if phone.status == 'in_stock' %}
                             <span class="badge badge-instock">In Stock</span>

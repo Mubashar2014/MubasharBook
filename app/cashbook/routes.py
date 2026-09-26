@@ -84,3 +84,30 @@ def add_entry():
     form.linked_stock_id.data = 0
 
     return render_template('cashbook/form.html', form=form)
+
+
+def _is_manual_entry(entry):
+    """Manual entries are user-created and not stock-linked or opening capital."""
+    return entry.linked_stock_id is None and entry.description != OPENING_CAPITAL_DESC
+
+
+@cashbook_bp.route('/<int:entry_id>/delete', methods=['POST'])
+@login_required
+def delete_entry(entry_id):
+    shop = get_user_shop()
+    entry = db.session.get(CashEntry, entry_id)
+
+    if entry is None or entry.shop_id != shop.id:
+        flash('Cash entry not found.', 'danger')
+        return redirect(url_for('cashbook.list_entries'))
+
+    if not _is_manual_entry(entry):
+        flash('Only manually added entries can be deleted. Stock-linked and opening capital entries are automatic.', 'warning')
+        return redirect(url_for('cashbook.list_entries'))
+
+    db.session.delete(entry)
+    db.session.flush()
+    recalc_cash_balances(shop.id)
+    db.session.commit()
+    flash('Cash entry deleted.', 'success')
+    return redirect(url_for('cashbook.list_entries'))
