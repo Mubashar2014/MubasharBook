@@ -72,29 +72,60 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-3">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-5">
-                    <input type="text" name="search" class="form-control" placeholder="Search by name, email, phone, or shop name" value="{{ search }}">
+    <!-- Email & Filter Actions -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-6">
+                            <input type="text" name="search" class="form-control" placeholder="Search by name, email, phone, or shop name" value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" class="form-select">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                                <option value="trial" {% if status_filter == 'trial' %}selected{% endif %}>Trial</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                                <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1.5">
+                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        </div>
+                        <div class="col-md-1.5">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary w-100">Clear</a>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-md-3">
-                    <select name="status" class="form-select">
-                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
-                        <option value="trial" {% if status_filter == 'trial' %}selected{% endif %}>Trial</option>
-                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
-                        <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
-                    </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="mb-3">Admin Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin.pending_payments') }}" class="btn btn-sm btn-warning">
+                            💳 Pending Payments
+                            {% if pending_payments_count > 0 %}
+                            <span class="badge bg-danger ms-1">{{ pending_payments_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{{ url_for('admin.test_email') }}" class="btn btn-sm btn-outline-primary">
+                            📧 Test Email
+                        </a>
+                        <form method="post" action="{{ url_for('admin.send_trial_reminders_manually') }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">
+                                ⏰ Send Trial Reminders
+                            </button>
+                        </form>
+                        <a href="{{ url_for('admin.email_logs') }}" class="btn btn-sm btn-outline-secondary">
+                            📬 Email Logs
+                        </a>
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
-                </div>
-                <div class="col-md-2">
-                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary w-100">Clear</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 

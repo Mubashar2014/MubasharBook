@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 40px; border-radius: 10px 10px 0 0; text-align: center;">
+        <div style="font-size: 60px; margin-bottom: 10px;">🎉</div>
+        <h1 style="margin: 0; font-size: 32px;">Payment Verified!</h1>
+        <p style="margin: 10px 0 0; opacity: 0.9; font-size: 18px;">Your subscription is now active</p>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px; margin-top: 0;">Hi {{ user.owner_name }},</p>
+
+        <p style="font-size: 16px;">Great news! Your payment has been verified and your subscription is now <strong>active</strong>. 🎊</p>
+
+        <div style="background: white; border-left: 4px solid #38ef7d; padding: 20px; margin: 25px 0; border-radius: 5px;">
+            <h3 style="margin-top: 0; font-size: 18px; color: #11998e;">Subscription Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Plan:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;">{{ subscription.plan|title }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Billing Cycle:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;">{{ subscription.billing_cycle|title }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Amount Paid:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #11998e;">Rs {{ "{:,.0f}".format(payment.amount) }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Next Billing:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: 600;">{{ subscription.next_billing_date.strftime('%d %B %Y') if subscription.next_billing_date else 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #666;">Status:</td>
+                    <td style="padding: 8px 0; text-align: right;"><span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">✅ Active</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #155724;">
+                <strong>✨ You now have full access to all {{ subscription.plan|title }} features!</strong><br>
+                Start managing your shop's finances with ease.
+            </p>
+        </div>
+
+        <h3 style="font-size: 18px; margin-top: 30px;">What You Get:</h3>
+        <ul style="font-size: 15px; line-height: 1.8; padding-left: 20px;">
+            <li><strong>Stock Management</strong> — Track phones, IMEI, costs & sales</li>
+            <li><strong>Cashbook</strong> — Monitor cash flow in real-time</li>
+            <li><strong>Khata/Ledger</strong> — Manage receivables & payables</li>
+            <li><strong>Expense Tracking</strong> — Record all business expenses</li>
+            <li><strong>P&L Reports</strong> — See your profit & loss clearly</li>
+            {% if subscription.plan == 'premium' %}
+            <li><strong>Shareholder Management</strong> — Split profits with investors</li>
+            <li><strong>Investor Portal</strong> — Let investors track their returns</li>
+            <li><strong>Phone Funding</strong> — Track which partner funded each phone</li>
+            {% endif %}
+        </ul>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ dashboard_url }}" style="display: inline-block; background: #11998e; color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 17px;">
+                Go to Dashboard
+            </a>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
+
+        <h3 style="font-size: 16px; margin-bottom: 12px;">📧 Receipt</h3>
+        <p style="font-size: 14px; color: #666; margin: 0;">
+            Payment ID: <strong>#{{ payment.id }}</strong><br>
+            Date: {{ payment.verified_at.strftime('%d %B %Y, %I:%M %p') if payment.verified_at else payment.created_at.strftime('%d %B %Y, %I:%M %p') }}<br>
+            Method: {{ payment.payment_method|title }}
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
+
+        <p style="font-size: 14px; color: #666; margin-bottom: 5px;">Need help getting started?</p>
+        <p style="font-size: 14px; color: #666; margin-top: 5px;">
+            📧 Email: {{ config.MAIL_DEFAULT_SENDER }}<br>
+            📱 WhatsApp: {{ config.PAYMENT_NAYAPAY_NUMBER }}
+        </p>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Thank you for subscribing!<br>
+            <strong>Mubashar's Book Team</strong>
+        </p>
+    </div>
+
+    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+        <p style="margin: 0;">© 2026 Mubashar's Book. All rights reserved.</p>
+    </div>
+</body>
+</html>

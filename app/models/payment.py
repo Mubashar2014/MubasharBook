@@ -25,8 +25,10 @@ class Payment(db.Model):
     
     # Receipt & verification
     receipt_url = db.Column(db.String(500), nullable=True)
+    payment_proof = db.Column(db.String(500), nullable=True)  # Uploaded screenshot filename
     verified_by_admin = db.Column(db.Boolean, default=False)  # For manual payments
     verified_at = db.Column(db.DateTime, nullable=True)
+    verified_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Admin who verified
     
     # Refund tracking
     refunded_at = db.Column(db.DateTime, nullable=True)
@@ -41,7 +43,8 @@ class Payment(db.Model):
 
     # Relationships
     subscription = db.relationship('Subscription', backref='payments', lazy=True)
-    user = db.relationship('User', backref='payments', lazy=True)
+    user = db.relationship('User', foreign_keys=[user_id], backref='payments', lazy=True)
+    verified_by = db.relationship('User', foreign_keys=[verified_by_id], backref='verified_payments', lazy=True)
 
     def mark_completed(self):
         """Mark payment as completed."""
@@ -66,6 +69,7 @@ class Payment(db.Model):
     def verify_manual_payment(self, admin_id):
         """Admin verifies manual payment (bank transfer)."""
         self.verified_by_admin = True
+        self.verified_by_id = admin_id
         self.verified_at = datetime.utcnow()
         self.status = 'completed'
         if not self.notes:

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your trial has expired</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1C1B19; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #F7F3E8; border-radius: 16px; padding: 40px; border: 1px solid #DDD4B8;">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: #8A8578; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px;">🔒</div>
+            <h1 style="font-family: 'Fraunces', serif; font-size: 28px; margin: 0; color: #1C1B19;">Your trial has ended</h1>
+            <p style="color: #5A5748; margin-top: 8px; font-size: 16px;">Your account is now in read-only mode</p>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="color: #5A5748; margin: 0 0 16px;">Hi {{ user.owner_name }},</p>
+            <p style="color: #5A5748; margin: 0 0 16px;">Your 7-day free trial of <strong>Mubashar's Book</strong> has ended.</p>
+            
+            <div style="background: #FFF4E6; border-left: 4px solid #C9A959; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                <p style="margin: 0 0 8px; color: #8A6A1E; font-weight: 600;">📋 Your account is now read-only:</p>
+                <ul style="margin: 8px 0 0; color: #8A6A1E; font-size: 14px; padding-left: 20px;">
+                    <li>✅ You can view all your data</li>
+                    <li>❌ You cannot add new stock or entries</li>
+                    <li>✅ All your records are safely stored</li>
+                </ul>
+            </div>
+
+            <p style="color: #5A5748; margin: 16px 0;">Subscribe now to unlock full access and continue managing your business smoothly.</p>
+
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="{{ dashboard_url }}/settings" style="display: inline-block; background: #2E5941; color: #fff; padding: 16px 36px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(46,89,65,0.3);">
+                    Subscribe Now — Starting Rs 2,000/month
+                </a>
+            </div>
+        </div>
+
+        <div style="background: #F0F9F4; border: 1px solid #2E5941; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #2E5941;">💎 What you get with subscription:</h3>
+            <div style="display: grid; gap: 8px;">
+                <div style="color: #2E5941; font-size: 14px;">✅ Add & manage unlimited stock</div>
+                <div style="color: #2E5941; font-size: 14px;">✅ Automatic cashbook tracking</div>
+                <div style="color: #2E5941; font-size: 14px;">✅ Khata for receivables/payables</div>
+                <div style="color: #2E5941; font-size: 14px;">✅ Expense management</div>
+                <div style="color: #2E5941; font-size: 14px;">✅ Profit & Loss reports</div>
+                <div style="color: #2E5941; font-size: 14px;">✅ Investor profit splitting (Premium)</div>
+            </div>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #2E5941;">
+                <p style="margin: 0 0 8px; color: #2E5941; font-size: 15px; font-weight: 600;">
+                    <strong>Basic Plan:</strong> Rs 2,000/month
+                </p>
+                <p style="margin: 0 0 8px; color: #2E5941; font-size: 15px; font-weight: 600;">
+                    <strong>Premium Plan:</strong> Rs 3,500/month
+                </p>
+                <p style="margin: 8px 0 0; color: #5A5748; font-size: 13px;">Affordable & powerful for your mobile business</p>
+            </div>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+            <p style="margin: 0; color: #5A5748; font-size: 14px;">Need help or have questions?</p>
+            <p style="margin: 8px 0 0; color: #8A8578; font-size: 13px;">Reply to this email and we'll assist you.</p>
+        </div>
+
+        <div style="text-align: center; color: #8A8578; font-size: 12px; border-top: 1px solid #DDD4B8; padding-top: 20px;">
+            <p style="margin: 0 0 8px;">© 2026 Mubashar's Book</p>
+            <p style="margin: 0;">Your data is safe and waiting for you.</p>
+        </div>
+    </div>
+</body>
+</html>

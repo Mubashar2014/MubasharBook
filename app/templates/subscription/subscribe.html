@@ -1,0 +1,114 @@
+{% extends "app_layout.html" %}
+{% block title %}Subscribe — Mubashar's Book{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 40px auto;">
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="font-family: var(--font-serif); font-size: 36px; margin-bottom: 12px;">Choose Your Plan</h1>
+        <p style="color: var(--ink-faint); font-size: 16px;">Select the plan that best fits your business needs</p>
+    </div>
+
+    {% if subscription and subscription.is_active %}
+    <div class="alert" style="background: #F0F9F4; border: 1px solid #D1EBD8; padding: 16px; border-radius: var(--radius); margin-bottom: 32px; text-align: center;">
+        <p style="margin: 0; color: #1B5E3A; font-weight: 600;">
+            ✅ You're currently on the <strong>{{ subscription.plan|title }}</strong> plan
+        </p>
+        <a href="{{ url_for('subscription.my_subscription') }}" style="color: #1B5E3A; text-decoration: underline; margin-top: 8px; display: inline-block;">
+            View subscription details →
+        </a>
+    </div>
+    {% endif %}
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
+        <!-- Basic Plan -->
+        <div class="card" style="background: var(--card); border: 2px solid var(--rule); border-radius: var(--radius-xl); padding: 32px; transition: transform 0.2s, box-shadow 0.2s;">
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-family: var(--font-serif); font-size: 24px; margin-bottom: 8px;">Basic</h3>
+                <p style="color: var(--ink-faint); font-size: 14px;">{{ plans.basic.description }}</p>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <div style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
+                    Rs 2,000
+                    <span style="font-size: 18px; color: var(--ink-faint); font-weight: 400;">/ month</span>
+                </div>
+                <div style="color: var(--ink-faint); font-size: 13px;">or Rs 20,000/year (save 17%)</div>
+            </div>
+
+            <ul style="list-style: none; margin: 0 0 28px; padding: 0;">
+                {% for feature in plans.basic.features %}
+                <li style="padding: 10px 0; border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                    <i data-lucide="check" style="width: 18px; height: 18px; color: var(--ledger);"></i>
+                    {{ feature }}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <a href="{{ url_for('subscription.payment_instructions', plan='basic', billing_cycle='monthly') }}" 
+               class="btn btn-primary btn-block btn-lg">
+                Subscribe to Basic
+            </a>
+            <a href="{{ url_for('subscription.payment_instructions', plan='basic', billing_cycle='annual') }}" 
+               class="btn btn-outline btn-block" style="margin-top: 8px;">
+                Subscribe Annually (Save 17%)
+            </a>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="card" style="background: var(--card); border: 3px solid var(--gold); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 0 0 1px var(--gold), var(--shadow-lg); position: relative;">
+            <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: var(--ink); padding: 4px 16px; border-radius: 16px; font-size: 11px; font-weight: 700; white-space: nowrap;">
+                MOST POPULAR
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-family: var(--font-serif); font-size: 24px; margin-bottom: 8px;">Premium</h3>
+                <p style="color: var(--ink-faint); font-size: 14px;">{{ plans.premium.description }}</p>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <div style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
+                    Rs 3,500
+                    <span style="font-size: 18px; color: var(--ink-faint); font-weight: 400;">/ month</span>
+                </div>
+                <div style="color: var(--ink-faint); font-size: 13px;">or Rs 35,000/year (save 17%)</div>
+            </div>
+
+            <ul style="list-style: none; margin: 0 0 28px; padding: 0;">
+                {% for feature in plans.premium.features %}
+                <li style="padding: 10px 0; border-bottom: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                    <i data-lucide="check" style="width: 18px; height: 18px; color: var(--gold-deep);"></i>
+                    {{ feature }}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <a href="{{ url_for('subscription.payment_instructions', plan='premium', billing_cycle='monthly') }}" 
+               class="btn btn-gold btn-block btn-lg">
+                Subscribe to Premium
+            </a>
+            <a href="{{ url_for('subscription.payment_instructions', plan='premium', billing_cycle='annual') }}" 
+               class="btn btn-outline btn-block" style="margin-top: 8px;">
+                Subscribe Annually (Save 17%)
+            </a>
+        </div>
+    </div>
+
+    <div style="text-align: center; color: var(--ink-faint); font-size: 14px;">
+        <p>💳 Pay via NayaPay, Bank Transfer, EasyPaisa, or JazzCash</p>
+        <p>✅ Activation within 24 hours after payment verification</p>
+    </div>
+</div>
+
+<style>
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+    .container > div:nth-child(2) {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}

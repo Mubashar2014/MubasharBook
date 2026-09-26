@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your trial ends in 3 days</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1C1B19; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #F7F3E8; border-radius: 16px; padding: 40px; border: 1px solid #DDD4B8;">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: #FFA726; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px;">⏰</div>
+            <h1 style="font-family: 'Fraunces', serif; font-size: 28px; margin: 0; color: #1C1B19;">Trial ending soon!</h1>
+            <p style="color: #5A5748; margin-top: 8px; font-size: 16px;">3 days left in your free trial</p>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="color: #5A5748; margin: 0 0 16px;">Hi {{ user.owner_name }},</p>
+            <p style="color: #5A5748; margin: 0 0 16px;">Your 7-day free trial of <strong>Mubashar's Book</strong> ends in <strong style="color: #FFA726;">3 days</strong>.</p>
+            <p style="color: #5A5748; margin: 0 0 16px;">We hope you've been enjoying:</p>
+            <ul style="color: #5A5748; margin: 0 0 20px; padding-left: 20px;">
+                <li>Easy stock management</li>
+                <li>Automatic cashbook entries</li>
+                <li>Khata tracking for receivables/payables</li>
+                <li>Profit & Loss reports</li>
+            </ul>
+            
+            <div style="background: #FFF4E6; border-left: 4px solid #FFA726; padding: 16px; margin: 20px 0; border-radius: 6px;">
+                <p style="margin: 0; color: #8A6A1E; font-size: 14px;">
+                    <strong>Don't lose your data!</strong> Subscribe now to keep your shop records safe and continue managing your business.
+                </p>
+            </div>
+
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="{{ dashboard_url }}" style="display: inline-block; background: #2E5941; color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 15px; margin-right: 12px;">
+                    Go to Dashboard
+                </a>
+                <a href="{{ dashboard_url }}/settings" style="display: inline-block; background: #C9A959; color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 15px;">
+                    Subscribe Now
+                </a>
+            </div>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #1C1B19;">💰 Simple Pricing</h3>
+            <div style="margin-bottom: 12px;">
+                <p style="margin: 0; color: #5A5748; font-size: 14px;"><strong>Basic:</strong> Rs 2,000/month — Perfect for single shop</p>
+                <p style="margin: 4px 0 0 20px; color: #8A8578; font-size: 12px;">Stock, cashbook, khata, P&L reports</p>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <p style="margin: 0; color: #5A5748; font-size: 14px;"><strong>Premium:</strong> Rs 3,500/month — For investors & partners</p>
+                <p style="margin: 4px 0 0 20px; color: #8A8578; font-size: 12px;">Everything in Basic + investor profit splitting</p>
+            </div>
+            <p style="margin: 12px 0 0; color: #8A8578; font-size: 13px; border-top: 1px solid #DDD4B8; padding-top: 12px;">Cancel anytime. Your data stays yours.</p>
+        </div>
+
+        <div style="text-align: center; color: #8A8578; font-size: 12px; border-top: 1px solid #DDD4B8; padding-top: 20px;">
+            <p style="margin: 0 0 8px;">© 2026 Mubashar's Book</p>
+            <p style="margin: 0;">Questions? Reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

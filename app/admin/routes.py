@@ -95,6 +95,9 @@ def dashboard():
         Payment.status == 'completed'
     ).scalar() or 0
     
+    # Pending payments count
+    pending_payments_count = Payment.query.filter_by(status='pending').count()
+    
     return render_template('admin/dashboard.html',
         users=users_pagination.items,
         pagination=users_pagination,
@@ -105,6 +108,7 @@ def dashboard():
         suspended_users=suspended_users,
         new_signups=new_signups,
         total_revenue=float(total_revenue),
+        pending_payments_count=pending_payments_count,
         search=search,
         status_filter=status_filter,
     )
@@ -305,3 +309,259 @@ def unsuspend_user(user_id):
     db.session.commit()
     flash('User reactivated.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+# ====== EMAIL TESTING & MANAGEMENT ======
+
+@admin_bp.route('/test-email', methods=['GET', 'POST'])
+@admin_required
+def test_email():
+    """Test email sending functionality."""
+    from app.utils.email import (
+        send_verification_email, 
+        send_welcome_email, 
+        send_trial_reminder_email,
+        send_trial_expired_email
+    )
+    
+    if request.method == 'POST':
+        user_id = request.form.get('user_id', type=int)
+        email_type = request.form.get('email_type')
+        
+        if not user_id:
+            flash('Please select a user.', 'danger')
+            return redirect(url_for('admin.test_email'))
+        
+        user = User.query.get(user_id)
+        if not user:
+            flash('User not found.', 'danger')
+            return redirect(url_for('admin.test_email'))
+        
+        # Send email based on type
+        success = False
+        if email_type == 'verification':
+            user.generate_verification_token()
+            db.session.commit()
+            success = send_verification_email(user)
+        elif email_type == 'welcome':
+            success = send_welcome_email(user)
+        elif email_type == 'trial_3days':
+            success = send_trial_reminder_email(user, 3)
+        elif email_type == 'trial_1day':
+            success = send_trial_reminder_email(user, 1)
+        elif email_type == 'trial_expired':
+            success = send_trial_expired_email(user)
+        else:
+            flash('Invalid email type.', 'danger')
+            return redirect(url_for('admin.test_email'))
+        
+        if success:
+            flash(f'Test email sent successfully to {user.email}!', 'success')
+        else:
+            flash(f'Failed to send email. Check email configuration.', 'danger')
+        
+        return redirect(url_for('admin.test_email'))
+    
+    # GET request - show form
+    users = User.query.filter_by(is_admin=False).order_by(User.owner_name).all()
+    return render_template('admin/test_email.html', users=users)
+
+
+@admin_bp.route('/send-trial-reminders', methods=['POST'])
+@admin_required
+def send_trial_reminders_manually():
+    """Manually trigger trial reminder emails."""
+    from app.utils.email import send_trial_reminder_email, send_trial_expired_email
+    
+    today = datetime.utcnow().date()
+    sent_count = 0
+    
+    # Find users with trials ending in 3 days
+    three_days = today + timedelta(days=3)
+    users_3days = User.query.join(Shop).join(Subscription).filter(
+        User.is_admin == False,
+        Subscription.status == 'trial',
+        func.date(Subscription.trial_end) == three_days
+    ).all()
+    
+    for user in users_3days:
+        if send_trial_reminder_email(user, 3):
+            sent_count += 1
+    
+    # Find users with trials ending in 1 day
+    one_day = today + timedelta(days=1)
+    users_1day = User.query.join(Shop).join(Subscription).filter(
+        User.is_admin == False,
+        Subscription.status == 'trial',
+        func.date(Subscription.trial_end) == one_day
+    ).all()
+    
+    for user in users_1day:
+        if send_trial_reminder_email(user, 1):
+            sent_count += 1
+    
+    # Find users with trials expired today
+    users_expired = User.query.join(Shop).join(Subscription).filter(
+        User.is_admin == False,
+        Subscription.status == 'trial',
+        func.date(Subscription.trial_end) == today
+    ).all()
+    
+    for user in users_expired:
+        if send_trial_expired_email(user):
+            sent_count += 1
+            # Mark subscription as expired
+            if user.shop and user.shop.subscription:
+                user.shop.subscription.expire()
+    
+    db.session.commit()
+    
+    flash(f'Sent {sent_count} trial reminder emails.', 'success')
+    return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/email-logs')
+@admin_required
+def email_logs():
+    """View email send history."""
+    from app.models.email_log import EmailLog
+    
+    page = request.args.get('page', 1, type=int)
+    email_type = request.args.get('type', '')
+    status = request.args.get('status', '')
+    
+    query = EmailLog.query
+    
+    if email_type:
+        query = query.filter_by(email_type=email_type)
+    
+    if status:
+        query = query.filter_by(status=status)
+    
+    logs_pagination = query.order_by(EmailLog.created_at.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+    
+    # Get stats
+    total_sent = EmailLog.query.filter_by(status='sent').count()
+    total_failed = EmailLog.query.filter_by(status='failed').count()
+    total_pending = EmailLog.query.filter_by(status='pending').count()
+    
+    return render_template('admin/email_logs.html',
+        logs=logs_pagination.items,
+        pagination=logs_pagination,
+        total_sent=total_sent,
+        total_failed=total_failed,
+        total_pending=total_pending,
+        email_type_filter=email_type,
+        status_filter=status,
+    )
+
+
+# ====== PAYMENT VERIFICATION ======
+
+@admin_bp.route('/pending-payments')
+@admin_required
+def pending_payments():
+    """View pending payment verifications."""
+    page = request.args.get('page', 1, type=int)
+    
+    payments_pagination = Payment.query.filter_by(status='pending').order_by(
+        Payment.created_at.desc()
+    ).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('admin/pending_payments.html',
+        payments=payments_pagination.items,
+        pagination=payments_pagination
+    )
+
+
+@admin_bp.route('/payment/<int:payment_id>/verify', methods=['POST'])
+@admin_required
+def verify_payment(payment_id):
+    """Verify and approve a payment."""
+    payment = Payment.query.get_or_404(payment_id)
+    
+    if payment.status != 'pending':
+        flash('Payment already processed.', 'warning')
+        return redirect(url_for('admin.pending_payments'))
+    
+    # Mark payment as completed
+    payment.status = 'completed'
+    payment.verified_by_admin = True
+    payment.verified_at = datetime.utcnow()
+    
+    # Get user and subscription
+    user = payment.user
+    subscription = payment.subscription
+    
+    # Determine plan from payment description
+    plan = 'basic'
+    if 'premium' in payment.description.lower():
+        plan = 'premium'
+    
+    billing_cycle = 'monthly'
+    if 'annual' in payment.description.lower():
+        billing_cycle = 'annual'
+    
+    # Activate subscription
+    subscription.activate_subscription(
+        payment_method=payment.payment_method,
+        billing_cycle=billing_cycle
+    )
+    subscription.plan = plan
+    user.is_premium = (plan == 'premium')
+    
+    # Log admin action
+    AdminLog.log_action(
+        admin_user_id=current_user.id,
+        action='payment_verified',
+        description=f'Verified payment of Rs {payment.amount} for {user.owner_name}',
+        target_type='payment',
+        target_id=payment.id,
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    db.session.commit()
+    
+    # Send confirmation email to user
+    from app.utils.email import send_payment_verified_email
+    send_payment_verified_email(user, payment, subscription)
+    
+    flash(f'Payment verified! Subscription activated for {user.owner_name}.', 'success')
+    return redirect(url_for('admin.pending_payments'))
+
+
+@admin_bp.route('/payment/<int:payment_id>/reject', methods=['POST'])
+@admin_required
+def reject_payment(payment_id):
+    """Reject a payment."""
+    payment = Payment.query.get_or_404(payment_id)
+    
+    if payment.status != 'pending':
+        flash('Payment already processed.', 'warning')
+        return redirect(url_for('admin.pending_payments'))
+    
+    reason = request.form.get('reason', '').strip()
+    
+    payment.status = 'failed'
+    payment.notes = f"Rejected by admin: {reason}" if reason else "Rejected by admin"
+    
+    # Log admin action
+    AdminLog.log_action(
+        admin_user_id=current_user.id,
+        action='payment_rejected',
+        description=f'Rejected payment of Rs {payment.amount} for {payment.user.owner_name}. Reason: {reason}',
+        target_type='payment',
+        target_id=payment.id,
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    db.session.commit()
+    
+    # TODO: Send rejection email to user
+    
+    flash(f'Payment rejected.', 'success')
+    return redirect(url_for('admin.pending_payments'))

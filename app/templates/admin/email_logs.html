@@ -1,0 +1,127 @@
+{% extends "admin_layout.html" %}
+{% block title %}Email Logs — Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 40px auto;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">📬 Email Logs</h1>
+        <p style="color: var(--ink-faint);">Track all email deliveries and failures.</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
+        <div class="stat-card" style="background: #F0F9F4; border: 1px solid #D1EBD8; border-radius: var(--radius); padding: 20px;">
+            <div style="color: #1B5E3A; font-size: 14px; margin-bottom: 4px;">✅ Sent</div>
+            <div style="font-size: 28px; font-weight: 700; color: #1B5E3A;">{{ total_sent }}</div>
+        </div>
+        <div class="stat-card" style="background: #FDF0EE; border: 1px solid #F5D6D4; border-radius: var(--radius); padding: 20px;">
+            <div style="color: #A13D2E; font-size: 14px; margin-bottom: 4px;">❌ Failed</div>
+            <div style="font-size: 28px; font-weight: 700; color: #A13D2E;">{{ total_failed }}</div>
+        </div>
+        <div class="stat-card" style="background: #FFF4E6; border: 1px solid #F5E4B8; border-radius: var(--radius); padding: 20px;">
+            <div style="color: #8A6A1E; font-size: 14px; margin-bottom: 4px;">⏳ Pending</div>
+            <div style="font-size: 28px; font-weight: 700; color: #8A6A1E;">{{ total_pending }}</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
+        <form method="GET" style="display: flex; gap: 12px; align-items: end;">
+            <div style="flex: 1;">
+                <label style="display: block; font-size: 13px; margin-bottom: 4px; color: var(--ink-faint);">Email Type</label>
+                <select name="type" style="width: 100%; padding: 10px; border: 1px solid var(--rule); border-radius: var(--radius);">
+                    <option value="">All Types</option>
+                    <option value="verification" {% if email_type_filter == 'verification' %}selected{% endif %}>Verification</option>
+                    <option value="welcome" {% if email_type_filter == 'welcome' %}selected{% endif %}>Welcome</option>
+                    <option value="trial_reminder" {% if email_type_filter == 'trial_reminder' %}selected{% endif %}>Trial Reminder</option>
+                    <option value="trial_expired" {% if email_type_filter == 'trial_expired' %}selected{% endif %}>Trial Expired</option>
+                    <option value="password_reset" {% if email_type_filter == 'password_reset' %}selected{% endif %}>Password Reset</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="display: block; font-size: 13px; margin-bottom: 4px; color: var(--ink-faint);">Status</label>
+                <select name="status" style="width: 100%; padding: 10px; border: 1px solid var(--rule); border-radius: var(--radius);">
+                    <option value="">All Status</option>
+                    <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">
+                <i data-lucide="filter" style="width: 16px; height: 16px;"></i>
+                Filter
+            </button>
+            {% if email_type_filter or status_filter %}
+            <a href="{{ url_for('admin.email_logs') }}" class="btn btn-secondary" style="padding: 10px 20px;">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Email Logs Table -->
+    <div class="card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background: var(--paper-alt); border-bottom: 2px solid var(--rule);">
+                <tr>
+                    <th style="padding: 12px; text-align: left; font-size: 13px; color: var(--ink-faint);">Date</th>
+                    <th style="padding: 12px; text-align: left; font-size: 13px; color: var(--ink-faint);">Recipient</th>
+                    <th style="padding: 12px; text-align: left; font-size: 13px; color: var(--ink-faint);">Type</th>
+                    <th style="padding: 12px; text-align: left; font-size: 13px; color: var(--ink-faint);">Subject</th>
+                    <th style="padding: 12px; text-align: left; font-size: 13px; color: var(--ink-faint);">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr style="border-bottom: 1px solid var(--rule);">
+                    <td style="padding: 12px; font-size: 13px;">{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td style="padding: 12px; font-size: 13px;">{{ log.recipient_email }}</td>
+                    <td style="padding: 12px;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: var(--paper-alt); color: var(--ink);">
+                            {{ log.email_type }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; font-size: 13px;">{{ log.subject }}</td>
+                    <td style="padding: 12px;">
+                        {% if log.status == 'sent' %}
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #F0F9F4; color: #1B5E3A;">✅ Sent</span>
+                        {% elif log.status == 'failed' %}
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #FDF0EE; color: #A13D2E;" title="{{ log.error_message }}">❌ Failed</span>
+                        {% elif log.status == 'pending' %}
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #FFF4E6; color: #8A6A1E;">⏳ Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 40px; text-align: center; color: var(--ink-faint);">
+                        No email logs found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div style="margin-top: 24px; text-align: center;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.email_logs', page=pagination.prev_num, type=email_type_filter, status=status_filter) }}" class="btn btn-secondary">← Previous</a>
+        {% endif %}
+        <span style="margin: 0 16px; color: var(--ink-faint);">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('admin.email_logs', page=pagination.next_num, type=email_type_filter, status=status_filter) }}" class="btn btn-secondary">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 32px; text-align: center;">
+        <a href="{{ url_for('admin.test_email') }}" class="btn btn-primary">
+            <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+            Test Email
+        </a>
+        <a href="{{ url_for('admin.dashboard') }}" style="margin-left: 12px; color: var(--ink-faint);">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
