@@ -126,7 +126,7 @@
                         <td data-label="Funded By">
                             {% set funder = funder_names.get(item.funded_by_partner_id) %}
                             {% if funder %}
-                            <span class="badge badge-funded"><i data-lucide="user-check" style="width:10px;height:10px;"></i> {{ funder }}</span>
+                            <span class="badge badge-funded" title="{{ funder }}"><i data-lucide="user-check" style="width:10px;height:10px;flex:none;"></i><span class="badge-text">{{ funder }}</span></span>
                             {% else %}
                             <span style="font-size:12px;color:var(--ink-faint);">—</span>
                             {% endif %}
@@ -163,8 +163,8 @@
                                 </span>
                                 <form method="POST" action="{{ url_for('stock.unsell_stock', item_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Undo this sale?\n\nThis removes the sale cash entries (money received, sale expense) and any pending receivable from the customer, recalculates balances, and puts the phone back in stock.\n\nThe purchase records are kept.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-outline btn-sm" title="Undo sale — phone returns to stock">
-                                        <i data-lucide="undo-2" style="width:14px;height:14px;"></i> Un-sell
+                                    <button type="submit" class="btn btn-outline btn-sm" title="Un-sell — undo this sale, phone returns to stock">
+                                        <i data-lucide="undo-2" style="width:14px;height:14px;"></i>
                                     </button>
                                 </form>
                             </div>

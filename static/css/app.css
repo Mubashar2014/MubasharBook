@@ -185,6 +185,11 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 .badge-locked { background: #F0ECE0 !important; color: #8A8578 !important; }
 .badge-reserved { background: #FDF8EC !important; color: #8A6A1E !important; }
 .badge-funded { background: #FDF8EC !important; color: #8A6A1E !important; }
+/* Funded-by chip: truncate long investor names in table view (keeps rows from widening) */
+@media (min-width: 1024px) {
+    .badge-funded { max-width: 150px; }
+    .badge-funded .badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 
 /* Bulk action bar (stock list) */
 .bulk-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
