@@ -94,11 +94,9 @@ def dashboard():
         CashEntry.shop_id == shop_id, CashEntry.entry_type == 'out', CashEntry.entry_date == today
     ).scalar() or 0)
 
-    today_expenses = float(db.session.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
-        Expense.shop_id == shop_id, Expense.expense_date == today
-    ).scalar() or 0)
-
-    today_net = today_cash_in - today_cash_out - today_expenses
+    # Cash-basis: expenses already appear as cash-out rows (linked_expense_id), so
+    # subtracting the Expense table again here would double-count them.
+    today_net = today_cash_in - today_cash_out
 
     # ===== MONTHLY P&L (based on sold phones this month) =====
     month_start = today.replace(day=1)

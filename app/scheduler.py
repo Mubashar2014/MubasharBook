@@ -109,6 +109,38 @@ def check_trial_expiry():
         current_app.logger.info(f'Trial expiry check complete. Processed {expired_count} expirations.')
 
 
+def check_subscription_expiry():
+    """
+    Expire paid subscriptions whose period has ended (quick-activated or
+    payment-verified) and clear stale premium flags so access stops.
+    Runs daily at 12:15 AM.
+    """
+    with current_app.app_context():
+        now = datetime.utcnow()
+        expired_subs = Subscription.query.filter(
+            Subscription.status == 'active',
+            Subscription.current_period_end.isnot(None),
+            Subscription.current_period_end < now,
+        ).all()
+
+        count = 0
+        for sub in expired_subs:
+            try:
+                sub.expire()
+                shop = db.session.get(Shop, sub.shop_id)
+                user = shop.owner if shop else None
+                if user is not None and user.is_premium:
+                    user.is_premium = False
+                count += 1
+            except Exception as e:
+                current_app.logger.error(f'Failed to expire subscription {sub.id}: {e}')
+
+        if count > 0:
+            db.session.commit()
+
+        current_app.logger.info(f'Subscription expiry check complete. Expired {count} subscriptions.')
+
+
 def check_subscription_renewals():
     """
     Check for subscriptions due for renewal.
@@ -180,7 +212,17 @@ def init_scheduler(app):
         replace_existing=True
     )
     
+    scheduler.add_job(
+        func=check_subscription_expiry,
+        trigger='cron',
+        hour=0,
+        minute=15,
+        id='subscription_expiry',
+        name='Check subscription expiry',
+        replace_existing=True
+    )
+    
     scheduler.start()
-    app.logger.info('Background scheduler started with 3 jobs')
+    app.logger.info('Background scheduler started with 4 jobs')
     
     return scheduler

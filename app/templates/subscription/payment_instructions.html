@@ -2,168 +2,182 @@
 {% block title %}Payment Instructions — Mubashar's Book{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 800px; margin: 40px auto;">
-    <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">Complete Your Payment</h1>
-        <p style="color: var(--ink-faint);">{{ plan_info.name }} Plan — {{ 'Monthly' if billing_cycle == 'monthly' else 'Annual' }} Billing</p>
-        <div style="font-family: var(--font-serif); font-size: 48px; color: var(--gold-deep); margin-top: 16px;">
+<div class="container" style="max-width: 700px; margin: 40px auto; padding: 0 20px;">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="font-family: var(--font-serif); font-size: 28px; margin-bottom: 8px; color: var(--ink);">Complete Your Payment</h1>
+        <p style="color: var(--ink-faint); font-size: 15px; margin-bottom: 12px;">{{ plan_info.name }} Plan — {{ 'Monthly' if billing_cycle == 'monthly' else 'Annual' }}</p>
+        <div style="font-family: var(--font-serif); font-size: 42px; color: var(--gold-deep); font-weight: 700;">
             Rs {{ "{:,.0f}".format(amount) }}
         </div>
     </div>
 
     <!-- Payment Methods -->
-    <div class="card" style="background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 32px; margin-bottom: 24px;">
-        <h3 style="font-family: var(--font-serif); font-size: 20px; margin-bottom: 20px;">Choose Payment Method</h3>
-        
-        <!-- NayaPay -->
-        <div class="payment-method" data-method="nayapay" style="border: 2px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; background: #00C853; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px;">
-                    N
+    <div style="margin-bottom: 32px;">
+        <!-- Bank Transfer to NayaPay -->
+        <div class="payment-card" style="background: white; border: 2px solid #E5E7EB; border-radius: 16px; padding: 24px; margin-bottom: 20px; transition: all 0.3s;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #00C853 0%, #00A844 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        <line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
                 </div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">NayaPay (Recommended)</div>
-                    <div style="font-size: 13px; color: var(--ink-faint);">Instant transfer — Free</div>
+                    <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0; color: #111827;">Bank Transfer</h3>
+                    <p style="margin: 0; font-size: 14px; color: #6B7280;">Transfer from any bank to NayaPay</p>
                 </div>
-                <i data-lucide="chevron-down" style="width: 20px; height: 20px; color: var(--ink-faint);"></i>
             </div>
-            <div class="payment-details" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--rule);">
-                <p style="margin-bottom: 16px; font-size: 14px;">Transfer <strong>Rs {{ "{:,.0f}".format(amount) }}</strong> to:</p>
-                <div style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px; margin-bottom: 16px;">
+
+            <div style="background: #F9FAFB; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 13px; color: #6B7280; margin-bottom: 8px; font-weight: 600;">SCAN QR CODE</div>
+                    <div class="qr-box" style="background: white; padding: 16px; border-radius: 12px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                        <img src="{{ url_for('static', filename='img/nayapay-qr.png') }}?v=1"
+                             alt="NayaPay QR"
+                             style="width: 160px; height: 160px; object-fit: contain; display: block;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="qr-fallback" style="display: none; font-size: 13px; color: #6B7280; padding: 20px 12px; min-width: 160px; text-align: center;">
+                            QR not available yet — send to<br><strong>{{ config.PAYMENT_NAYAPAY_NUMBER }}</strong>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #9CA3AF; margin-top: 8px;">Scan with any banking app</div>
+                </div>
+
+                <div style="border-top: 1px solid #E5E7EB; padding-top: 16px;">
                     <div style="margin-bottom: 12px;">
-                        <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Account Name</div>
-                        <div style="font-weight: 700;">{{ config.PAYMENT_NAYAPAY_NAME }}</div>
+                        <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px; font-weight: 600;">ACCOUNT NAME</div>
+                        <div style="font-size: 15px; font-weight: 700; color: #111827;">{{ config.PAYMENT_NAYAPAY_NAME }}</div>
                     </div>
                     <div>
-                        <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Mobile Number</div>
-                        <div style="font-weight: 700; font-size: 18px; color: var(--gold-deep);">{{ config.PAYMENT_NAYAPAY_NUMBER }}</div>
+                        <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px; font-weight: 600;">MOBILE NUMBER (NayaPay)</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #00C853; letter-spacing: 0.5px;">{{ config.PAYMENT_NAYAPAY_NUMBER }}</div>
                     </div>
                 </div>
-                <p style="font-size: 13px; color: var(--ink-soft);">
-                    1. Open NayaPay app<br>
-                    2. Send Rs {{ "{:,.0f}".format(amount) }} to {{ config.PAYMENT_NAYAPAY_NUMBER }}<br>
-                    3. Take screenshot of confirmation<br>
-                    4. Upload below
+            </div>
+
+            <div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+                <p style="margin: 0; font-size: 13px; color: #1E40AF; line-height: 1.6;">
+                    <strong>✓ Any Bank Accepted:</strong> You can transfer from your bank account, JazzCash, EasyPaisa, or any mobile banking app to this NayaPay number.
                 </p>
+            </div>
+
+            <div style="font-size: 13px; color: #4B5563; line-height: 1.8; margin-bottom: 16px;">
+                <strong style="display: block; margin-bottom: 8px; color: #111827;">📱 How to Transfer:</strong>
+                1. Open your banking app<br>
+                2. Select "Send Money" or "Transfer"<br>
+                3. Enter amount: <strong>Rs {{ "{:,.0f}".format(amount) }}</strong><br>
+                4. To: <strong>{{ config.PAYMENT_NAYAPAY_NUMBER }}</strong> (NayaPay)<br>
+                5. Take screenshot of confirmation
             </div>
         </div>
 
-        <!-- Bank Transfer -->
-        {% if config.PAYMENT_IBAN %}
-        <div class="payment-method" data-method="bank_transfer" style="border: 2px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; background: var(--ledger); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="building" style="width: 24px; height: 24px; color: white;"></i>
+        <!-- EasyPaisa -->
+        <div class="payment-card" style="background: white; border: 2px solid #E5E7EB; border-radius: 16px; padding: 24px; transition: all 0.3s;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #00A859 0%, #008A4A 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                        <line x1="12" y1="18" x2="12" y2="18"/>
+                    </svg>
                 </div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Bank Transfer</div>
-                    <div style="font-size: 13px; color: var(--ink-faint);">{{ config.PAYMENT_BANK_NAME }} — Free</div>
-                </div>
-                <i data-lucide="chevron-down" style="width: 20px; height: 20px; color: var(--ink-faint);"></i>
-            </div>
-            <div class="payment-details" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--rule);">
-                <p style="margin-bottom: 16px; font-size: 14px;">Transfer <strong>Rs {{ "{:,.0f}".format(amount) }}</strong> to:</p>
-                <div style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px;">
-                    <div style="margin-bottom: 12px;">
-                        <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Account Title</div>
-                        <div style="font-weight: 700;">{{ config.PAYMENT_ACCOUNT_TITLE }}</div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">Account Number</div>
-                        <div style="font-weight: 700;">{{ config.PAYMENT_ACCOUNT_NUMBER }}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 12px; color: var(--ink-faint); margin-bottom: 4px;">IBAN</div>
-                        <div style="font-weight: 700;">{{ config.PAYMENT_IBAN }}</div>
-                    </div>
+                    <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0; color: #111827;">EasyPaisa</h3>
+                    <p style="margin: 0; font-size: 14px; color: #6B7280;">Mobile wallet transfer</p>
                 </div>
             </div>
-        </div>
-        {% endif %}
 
-        <!-- EasyPaisa / JazzCash -->
-        <div class="payment-method" data-method="easypaisa" style="border: 2px solid var(--rule); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: all 0.2s;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; background: #00A859; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="smartphone" style="width: 24px; height: 24px; color: white;"></i>
+            <div style="background: #F9FAFB; border-radius: 12px; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 13px; color: #6B7280; margin-bottom: 8px; font-weight: 600;">SCAN QR CODE</div>
+                    <div class="qr-box" style="background: white; padding: 16px; border-radius: 12px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                        <img src="{{ url_for('static', filename='img/easypaisa-qr.png') }}?v=1"
+                             alt="EasyPaisa QR"
+                             style="width: 160px; height: 160px; object-fit: contain; display: block;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="qr-fallback" style="display: none; font-size: 13px; color: #6B7280; padding: 20px 12px; min-width: 160px; text-align: center;">
+                            QR not available yet — send to<br><strong>{{ config.PAYMENT_EASYPAISA_NUMBER }}</strong>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #9CA3AF; margin-top: 8px;">Scan with EasyPaisa app</div>
                 </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">EasyPaisa / JazzCash</div>
-                    <div style="font-size: 13px; color: var(--ink-faint);">Mobile wallet — Free</div>
+
+                <div style="border-top: 1px solid #E5E7EB; padding-top: 16px;">
+                    <div>
+                        <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px; font-weight: 600;">MOBILE NUMBER (EasyPaisa)</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #00A859; letter-spacing: 0.5px;">{{ config.PAYMENT_EASYPAISA_NUMBER }}</div>
+                    </div>
                 </div>
-                <i data-lucide="chevron-down" style="width: 20px; height: 20px; color: var(--ink-faint);"></i>
-            </div>
-            <div class="payment-details" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--rule);">
-                <p style="font-size: 14px; color: var(--ink-soft);">
-                    Send money to <strong>{{ config.PAYMENT_NAYAPAY_NUMBER }}</strong><br>
-                    Amount: <strong>Rs {{ "{:,.0f}".format(amount) }}</strong><br><br>
-                    Take screenshot of confirmation and upload below.
-                </p>
             </div>
         </div>
     </div>
 
-    <!-- Upload Form -->
-    <div class="card" style="background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 32px;">
-        <h3 style="font-family: var(--font-serif); font-size: 20px; margin-bottom: 20px;">Upload Payment Proof</h3>
+    <!-- WhatsApp Share Section -->
+    <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 16px; padding: 32px 24px; text-align: center; margin-bottom: 32px; box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3);">
+        <div style="font-size: 48px; margin-bottom: 12px;">📱</div>
+        <h3 style="font-size: 20px; font-weight: 700; color: white; margin: 0 0 8px 0;">Payment Done?</h3>
+        <p style="font-size: 14px; color: rgba(255,255,255,0.9); margin: 0 0 20px 0; line-height: 1.6;">
+            Share your payment screenshot directly via WhatsApp for instant verification
+        </p>
         
-        <form method="POST" action="{{ url_for('subscription.submit_payment') }}" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="plan" value="{{ plan }}">
-            <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">
-            <input type="hidden" name="payment_method" id="selected_method" value="nayapay">
+        {% set wa_number = config.PAYMENT_WHATSAPP or '03129347067' %}
+        <a href="https://wa.me/92{{ wa_number.lstrip('0') }}?text=Hi!%20I%20have%20subscribed%20to%20{{ plan }}%20plan%20({{ billing_cycle }})%20for%20Rs%20{{ amount }}.%20Sending%20payment%20proof..." 
+           target="_blank"
+           style="display: inline-flex; align-items: center; gap: 12px; background: white; color: #128C7E; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s;"
+           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.2)'"
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Share on WhatsApp
+        </a>
+        
+        <p style="font-size: 12px; color: rgba(255,255,255,0.8); margin: 16px 0 0 0;">
+            ⏱️ Activation within 24 hours after verification
+        </p>
+    </div>
 
-            <div class="field" style="margin-bottom: 20px;">
-                <label>Payment Screenshot *</label>
-                <input type="file" name="payment_proof" accept="image/*,.pdf" required style="width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius);">
-                <p style="font-size: 12px; color: var(--ink-faint); margin-top: 8px;">Upload PNG, JPG, or PDF (max 5MB)</p>
+    <!-- Info Box -->
+    <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <div style="display: flex; gap: 12px; align-items: start;">
+            <div style="font-size: 20px; flex-shrink: 0;">ℹ️</div>
+            <div style="font-size: 13px; color: #92400E; line-height: 1.6;">
+                <strong>Important:</strong> Make sure to include your payment screenshot when sending the WhatsApp message. We'll verify and activate your subscription within 24 hours.
             </div>
-
-            <div class="field" style="margin-bottom: 20px;">
-                <label>Transaction ID (optional)</label>
-                <input type="text" name="transaction_id" placeholder="e.g., TXN123456" style="width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius);">
-            </div>
-
-            <div class="field" style="margin-bottom: 24px;">
-                <label>Additional Notes (optional)</label>
-                <textarea name="notes" rows="3" placeholder="Any additional information..." style="width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: var(--radius);"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block btn-lg">
-                <i data-lucide="upload" style="width: 18px; height: 18px;"></i>
-                Submit Payment for Verification
-            </button>
-        </form>
-
-        <div style="margin-top: 20px; padding: 16px; background: var(--paper-alt); border-radius: var(--radius); text-align: center;">
-            <p style="font-size: 13px; color: var(--ink-soft); margin: 0;">
-                ⏱️ Your subscription will be activated within <strong>24 hours</strong> after verification.
-            </p>
         </div>
+    </div>
+
+    <!-- Back Link -->
+    <div style="text-align: center; margin-top: 32px;">
+        <a href="{{ url_for('subscription.subscribe') }}" style="color: #6B7280; text-decoration: none; font-size: 14px; transition: color 0.2s;" onmouseover="this.style.color='#111827'" onmouseout="this.style.color='#6B7280'">
+            ← Back to Plans
+        </a>
     </div>
 </div>
 
-<script>
-// Payment method selection
-document.querySelectorAll('.payment-method').forEach(method => {
-    method.addEventListener('click', function() {
-        // Close all
-        document.querySelectorAll('.payment-method').forEach(m => {
-            m.style.borderColor = 'var(--rule)';
-            m.querySelector('.payment-details').style.display = 'none';
-        });
-        
-        // Open clicked
-        this.style.borderColor = 'var(--gold)';
-        this.querySelector('.payment-details').style.display = 'block';
-        
-        // Set hidden field
-        const methodValue = this.dataset.method;
-        document.getElementById('selected_method').value = methodValue;
-    });
-});
+<style>
+.payment-card:hover {
+    border-color: #D1D5DB;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
 
-// Auto-open first method
-document.querySelector('.payment-method').click();
-</script>
+@media (max-width: 640px) {
+    .container {
+        padding: 0 16px !important;
+    }
+    
+    h1 {
+        font-size: 24px !important;
+    }
+    
+    .payment-card {
+        padding: 20px !important;
+    }
+    
+    div[style*="font-size: 42px"] {
+        font-size: 36px !important;
+    }
+}
+</style>
 {% endblock %}

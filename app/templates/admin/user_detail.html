@@ -214,6 +214,45 @@
                             </div>
                         </div>
 
+                        <!-- Quick Activate (New Simple Form) -->
+                        <div class="col-md-4">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="mb-3">⚡ Quick Activate</h6>
+                                    <form method="post" action="{{ url_for('admin.quick_activate_subscription', user_id=user.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Plan:</label>
+                                            <select name="plan" class="form-select form-select-sm" required>
+                                                <option value="basic">Basic (Rs 2,000/mo)</option>
+                                                <option value="premium">Premium (Rs 3,500/mo)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Duration:</label>
+                                            <select name="duration" class="form-select form-select-sm" required>
+                                                <option value="1">1 Month</option>
+                                                <option value="2">2 Months</option>
+                                                <option value="3">3 Months</option>
+                                                <option value="6">6 Months</option>
+                                                <option value="12">1 Year</option>
+                                                <option value="custom">Custom Days</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2" id="custom-days-field" style="display: none;">
+                                            <label class="form-label small">Custom Days:</label>
+                                            <input type="number" name="custom_days" class="form-control form-control-sm" placeholder="e.g., 45" min="1">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">Notes:</label>
+                                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="e.g., Promotional offer">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">Activate Now</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Activate Subscription -->
                         <div class="col-md-4">
                             <div class="card border-success">
@@ -365,4 +404,22 @@
         </div>
     </div>
 </div>
+
+<script>
+// Show/hide custom days field
+document.addEventListener('DOMContentLoaded', function() {
+    const durationSelect = document.querySelector('select[name="duration"]');
+    const customDaysField = document.getElementById('custom-days-field');
+    
+    if (durationSelect) {
+        durationSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDaysField.style.display = 'block';
+            } else {
+                customDaysField.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

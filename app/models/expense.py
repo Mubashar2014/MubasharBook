@@ -24,3 +24,7 @@ class Expense(db.Model):
     description = db.Column(db.String(300))
     expense_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    category = db.relationship(
+        'ExpenseCategory', backref=db.backref('expenses', lazy=True), lazy=True
+    )

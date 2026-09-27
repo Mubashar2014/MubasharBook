@@ -15,4 +15,5 @@ uploads/
 htmlcov/
 *.egg-info/
 dist/
-build/app/config.py
+build/
+migrations/

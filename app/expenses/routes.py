@@ -3,8 +3,9 @@ from flask_login import login_required, current_user
 from app.expenses import expenses_bp
 from app.expenses.forms import ExpenseForm, ExpenseCategoryForm
 from app.models.expense import Expense, ExpenseCategory
+from app.models.cashbook import CashEntry
 from app.extensions import db
-from app.utils import get_user_shop
+from app.utils import get_user_shop, ensure_opening_cash, recalc_cash_balances
 
 DEFAULT_CATEGORIES = [
     'Rent',
@@ -66,6 +67,25 @@ def add_expense():
             expense_date=form.expense_date.data
         )
         db.session.add(expense)
+        db.session.flush()
+
+        # Mirror the expense into the cashbook so cash-in-hand reflects money spent.
+        # Cash-basis formulas (dashboard/partners/investors) read cash_out only — no
+        # separate "- expenses" subtraction there anymore, so this never double-counts.
+        ensure_opening_cash(shop)
+        category = next((c.name for c in categories if c.id == form.category_id.data), 'Expense')
+        desc = f"Expense: {category}"
+        if expense.description:
+            desc = f"{desc} — {expense.description}"
+        db.session.add(CashEntry(
+            shop_id=shop.id,
+            entry_type='out',
+            amount=expense.amount,
+            description=desc[:300],
+            entry_date=expense.expense_date,
+            linked_expense_id=expense.id,
+        ))
+        recalc_cash_balances(shop.id)
         db.session.commit()
         flash('Expense added.', 'success')
         return redirect(url_for('expenses.list_expenses'))
