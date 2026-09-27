@@ -167,10 +167,12 @@ def _calculate_period_net_profit(period):
     """
     Calculate net profit for a given period.
 
-    Net Profit = Total Cash In - Total Cash Out - Total Expenses
+    Net Profit = Total Cash In - Total Cash Out
+
+    Cash-basis only: every expense is recorded as a cash-out row (linked_expense_id),
+    so subtracting the Expense table again would double-count it.
     """
     from app.models.cashbook import CashEntry
-    from app.models.expense import Expense
 
     cash_in = db.session.query(
         db.func.coalesce(db.func.sum(CashEntry.amount), 0)
@@ -190,12 +192,4 @@ def _calculate_period_net_profit(period):
         CashEntry.entry_date <= period.period_end,
     ).scalar()
 
-    expenses = db.session.query(
-        db.func.coalesce(db.func.sum(Expense.amount), 0)
-    ).filter(
-        Expense.shop_id == period.shop_id,
-        Expense.expense_date >= period.period_start,
-        Expense.expense_date <= period.period_end,
-    ).scalar()
-
-    return Decimal(str(cash_in)) - Decimal(str(cash_out)) - Decimal(str(expenses))
+    return Decimal(str(cash_in)) - Decimal(str(cash_out))

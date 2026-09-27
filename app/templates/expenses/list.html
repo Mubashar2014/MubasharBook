@@ -38,7 +38,7 @@
                 <tr>
                     <td data-label="Date">{{ expense.expense_date.strftime('%d %b %Y') }}</td>
                     <td data-label="Category">
-                        <span class="badge badge-reserved">{{ expense.category.name }}</span>
+                        <span class="badge badge-reserved">{{ expense.category.name if expense.category else '—' }}</span>
                     </td>
                     <td data-label="Description">{{ expense.description or '—' }}</td>
                     <td data-label="Amount" class="num-cell">Rs {{ '{:,.0f}'.format(expense.amount|float) }}</td>

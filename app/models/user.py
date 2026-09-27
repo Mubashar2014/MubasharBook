@@ -45,9 +45,26 @@ class User(UserMixin, db.Model):
         return datetime.utcnow() < self.trial_end
 
     @property
+    def has_active_access(self):
+        """True while the account may write: trial, paid window, or premium fallback."""
+        if self.is_trial_active:
+            return True
+        sub = self.shop.subscription if self.shop else None
+        if sub is not None:
+            if sub.status in ('expired', 'cancelled', 'suspended'):
+                return False
+            if sub.status in ('trial', 'active'):
+                if sub.current_period_end and datetime.utcnow() < sub.current_period_end:
+                    return True
+                # Period finished but cron hasn't expired the row yet — deny now
+                if sub.current_period_end:
+                    return False
+        return bool(self.is_premium)
+
+    @property
     def is_read_only(self):
-        """Account is read-only when trial expired and not premium."""
-        return not self.is_trial_active and not self.is_premium
+        """Account is read-only when there is no active trial or paid subscription."""
+        return not self.has_active_access
 
     def start_trial(self, days=7):
         self.trial_start = datetime.utcnow()

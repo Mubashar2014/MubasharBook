@@ -87,8 +87,10 @@ def add_entry():
 
 
 def _is_manual_entry(entry):
-    """Manual entries are user-created and not stock-linked or opening capital."""
-    return entry.linked_stock_id is None and entry.description != OPENING_CAPITAL_DESC
+    """Manual entries are user-created and not stock/expense-linked or opening capital."""
+    return (entry.linked_stock_id is None
+            and entry.linked_expense_id is None
+            and entry.description != OPENING_CAPITAL_DESC)
 
 
 @cashbook_bp.route('/<int:entry_id>/delete', methods=['POST'])
@@ -102,7 +104,7 @@ def delete_entry(entry_id):
         return redirect(url_for('cashbook.list_entries'))
 
     if not _is_manual_entry(entry):
-        flash('Only manually added entries can be deleted. Stock-linked and opening capital entries are automatic.', 'warning')
+        flash('Only manually added entries can be deleted. Stock/expense-linked and opening capital entries are automatic.', 'warning')
         return redirect(url_for('cashbook.list_entries'))
 
     db.session.delete(entry)

@@ -13,5 +13,6 @@ class CashEntry(db.Model):
     description = db.Column(db.String(300), nullable=False)
     entry_date = db.Column(db.Date, nullable=False)
     linked_stock_id = db.Column(db.Integer, nullable=True)  # plain ID, no FK to avoid cycles
+    linked_expense_id = db.Column(db.Integer, nullable=True)  # plain ID, no FK to avoid cycles
     balance_after = db.Column(db.Numeric(12, 2))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

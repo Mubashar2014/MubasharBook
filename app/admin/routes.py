@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import calendar
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import current_user
 from sqlalchemy import func, or_
@@ -247,6 +248,88 @@ def activate_subscription(user_id):
     
     db.session.commit()
     flash(f'Subscription activated successfully. Rs {amount:,.0f} payment recorded.', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+def _add_months(dt, months):
+    """Calendar-accurate month addition (clamps day to month length)."""
+    month = dt.month - 1 + months
+    year = dt.year + month // 12
+    month = month % 12 + 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+@admin_bp.route('/user/<int:user_id>/quick-activate', methods=['POST'])
+@admin_required
+def quick_activate_subscription(user_id):
+    """Quick activate subscription with plan and duration (no payment record)."""
+    user = User.query.get_or_404(user_id)
+    
+    if user.is_admin:
+        flash('Cannot activate admin user subscription.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    if not user.shop:
+        flash('User has no shop.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    subscription = user.shop.subscription
+    if not subscription:
+        flash('User has no subscription.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    plan = request.form.get('plan', '').strip()
+    duration = request.form.get('duration', '').strip()
+    custom_days = request.form.get('custom_days', type=int)
+    notes = request.form.get('notes', '').strip()
+
+    if plan not in ('basic', 'premium'):
+        flash('Please select a valid plan.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+
+    # Calculate duration (calendar-accurate, not months * 30)
+    if duration == 'custom':
+        if not custom_days or custom_days <= 0:
+            flash('Please enter valid custom days.', 'danger')
+            return redirect(url_for('admin.user_detail', user_id=user_id))
+        now = datetime.utcnow()
+        period_end = now + timedelta(days=custom_days)
+        duration_text = f'{custom_days} days'
+    elif duration in ('1', '2', '3', '6', '12'):
+        months = int(duration)
+        now = datetime.utcnow()
+        period_end = _add_months(now, months)
+        duration_text = '1 year' if months == 12 else f'{months} month(s)'
+    else:
+        flash('Please select a valid duration.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+
+    # Activate subscription
+    subscription.status = 'active'
+    subscription.plan = plan
+    subscription.current_period_start = now
+    subscription.current_period_end = period_end
+    subscription.next_billing_date = period_end
+    subscription.payment_method = 'manual_admin'
+    
+    # Set premium flag
+    user.is_premium = (plan == 'premium')
+    
+    # Log admin action
+    AdminLog.log_action(
+        admin_user_id=current_user.id,
+        action='quick_activation',
+        description=f'Quick activated {plan.title()} plan for {user.owner_name} - Duration: {duration_text}. Notes: {notes or "None"}',
+        target_type='subscription',
+        target_id=subscription.id,
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    db.session.commit()
+    
+    flash(f'✅ Subscription activated! {plan.title()} plan for {duration_text}. Expires: {subscription.current_period_end.strftime("%Y-%m-%d")}', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
 

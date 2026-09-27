@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from app.models.user import User
 from app.models.shop import Shop
+from app.extensions import db
 
 
 def test_signup_page_loads(client):
@@ -30,7 +33,7 @@ def test_signup_creates_user_and_shop(client, app):
         assert float(shop.initial_investment) == 100000.0
 
 
-def test_signup_redirects_to_dashboard(client, app):
+def test_signup_redirects_to_email_verification(client, app):
     resp = client.post('/auth/signup', data={
         'owner_name': 'Redirect User',
         'phone': '03007776655',
@@ -43,7 +46,9 @@ def test_signup_redirects_to_dashboard(client, app):
     }, follow_redirects=False)
 
     assert resp.status_code == 302
-    assert '/dashboard' in resp.headers['Location']
+    # Email verification is required before login (no auto-verify)
+    assert '/auth/verify' in resp.headers['Location']
+    assert 'redirect@example.com' in resp.headers['Location']
 
 
 def test_signup_duplicate_phone_redirects_to_login(client, test_user):
@@ -68,6 +73,10 @@ def test_login_page_loads(client):
 
 
 def test_login_with_valid_credentials(client, test_user):
+    # Login now requires a verified email
+    test_user.email_verified_at = datetime.utcnow()
+    db.session.commit()
+
     resp = client.post('/auth/login', data={
         'email': 'testuser@test.com',
         'password': 'password123',
@@ -75,6 +84,17 @@ def test_login_with_valid_credentials(client, test_user):
 
     assert resp.status_code == 302
     assert '/dashboard' in resp.headers['Location']
+
+
+def test_login_unverified_email_redirects_to_verify(client, test_user):
+    # test_user has email_verified_at=None → login must demand verification
+    resp = client.post('/auth/login', data={
+        'email': 'testuser@test.com',
+        'password': 'password123',
+    }, follow_redirects=False)
+
+    assert resp.status_code == 302
+    assert '/auth/verify' in resp.headers['Location']
 
 
 def test_login_with_invalid_credentials(client, test_user):

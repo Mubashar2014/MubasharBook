@@ -94,8 +94,9 @@ def dashboard():
     if current_period:
         current_period_label = f"{current_period.period_start.strftime('%b %Y')} — {current_period.period_end.strftime('%b %Y')}"
         if current_period.status == 'open':
+            # Cash-basis: expenses are already cash-out rows (linked_expense_id),
+            # so no separate "- expenses" subtraction here (would double-count).
             from app.models.cashbook import CashEntry
-            from app.models.expense import Expense
 
             cash_in = db.session.query(
                 db.func.coalesce(db.func.sum(CashEntry.amount), 0)
@@ -115,15 +116,7 @@ def dashboard():
                 CashEntry.entry_date <= current_period.period_end,
             ).scalar()
 
-            expenses = db.session.query(
-                db.func.coalesce(db.func.sum(Expense.amount), 0)
-            ).filter(
-                Expense.shop_id == partner.shop_id,
-                Expense.expense_date >= current_period.period_start,
-                Expense.expense_date <= current_period.period_end,
-            ).scalar()
-
-            net_profit = Decimal(str(cash_in)) - Decimal(str(cash_out)) - Decimal(str(expenses))
+            net_profit = Decimal(str(cash_in)) - Decimal(str(cash_out))
             split_result = calculate_split(partner.shop_id, net_profit)
             for s in split_result['splits']:
                 if s['partner_id'] == partner.id:
@@ -198,8 +191,9 @@ def profit_share():
             status = 'locked'
             label = f"{period.period_start.strftime('%b %d')} — {period.period_end.strftime('%b %d, %Y')}"
         else:
+            # Cash-basis: expenses are already cash-out rows (linked_expense_id),
+            # so no separate "- expenses" subtraction here (would double-count).
             from app.models.cashbook import CashEntry
-            from app.models.expense import Expense
 
             cash_in = db.session.query(
                 db.func.coalesce(db.func.sum(CashEntry.amount), 0)
@@ -219,15 +213,7 @@ def profit_share():
                 CashEntry.entry_date <= period.period_end,
             ).scalar()
 
-            expenses = db.session.query(
-                db.func.coalesce(db.func.sum(Expense.amount), 0)
-            ).filter(
-                Expense.shop_id == partner.shop_id,
-                Expense.expense_date >= period.period_start,
-                Expense.expense_date <= period.period_end,
-            ).scalar()
-
-            net_profit = Decimal(str(cash_in)) - Decimal(str(cash_out)) - Decimal(str(expenses))
+            net_profit = Decimal(str(cash_in)) - Decimal(str(cash_out))
             split_result = calculate_split(partner.shop_id, net_profit)
             share = Decimal('0')
             for s in split_result['splits']:

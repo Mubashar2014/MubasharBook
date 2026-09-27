@@ -19,16 +19,16 @@
     </div>
     {% endif %}
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
+    <div class="plan-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;">
         <!-- Basic Plan -->
-        <div class="card" style="background: var(--card); border: 2px solid var(--rule); border-radius: var(--radius-xl); padding: 32px; transition: transform 0.2s, box-shadow 0.2s;">
+        <div class="card plan-card" style="background: var(--card); border: 2px solid var(--rule); border-radius: var(--radius-xl); padding: 32px; transition: transform 0.2s, box-shadow 0.2s;">
             <div style="margin-bottom: 24px;">
                 <h3 style="font-family: var(--font-serif); font-size: 24px; margin-bottom: 8px;">Basic</h3>
                 <p style="color: var(--ink-faint); font-size: 14px;">{{ plans.basic.description }}</p>
             </div>
             
             <div style="margin-bottom: 24px;">
-                <div style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
+                <div class="plan-price" style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
                     Rs 2,000
                     <span style="font-size: 18px; color: var(--ink-faint); font-weight: 400;">/ month</span>
                 </div>
@@ -55,7 +55,7 @@
         </div>
 
         <!-- Premium Plan -->
-        <div class="card" style="background: var(--card); border: 3px solid var(--gold); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 0 0 1px var(--gold), var(--shadow-lg); position: relative;">
+        <div class="card plan-card" style="background: var(--card); border: 3px solid var(--gold); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 0 0 1px var(--gold), var(--shadow-lg); position: relative;">
             <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: var(--ink); padding: 4px 16px; border-radius: 16px; font-size: 11px; font-weight: 700; white-space: nowrap;">
                 MOST POPULAR
             </div>
@@ -66,7 +66,7 @@
             </div>
             
             <div style="margin-bottom: 24px;">
-                <div style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
+                <div class="plan-price" style="font-family: var(--font-serif); font-size: 42px; color: var(--ink); margin-bottom: 4px;">
                     Rs 3,500
                     <span style="font-size: 18px; color: var(--ink-faint); font-weight: 400;">/ month</span>
                 </div>
@@ -106,8 +106,17 @@
 }
 
 @media (max-width: 768px) {
-    .container > div:nth-child(2) {
+    .plan-grid {
         grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .plan-card {
+        padding: 20px !important;
+    }
+    .plan-price {
+        font-size: 32px !important;
     }
 }
 </style>

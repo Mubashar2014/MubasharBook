@@ -54,6 +54,7 @@
 - [x] Filter by period (today/week/month/all)
 - [x] Opening capital entry
 - [x] Automatic balance tracking
+- [x] Expense entries auto-created from the expense form
 - [x] Entry history
 
 #### Khata/Ledger ✅
@@ -73,6 +74,10 @@
 - [x] Filter expenses by category
 - [x] Track expense dates
 - [x] Category management
+- [x] Auto-create cashbook cash-out row on add (linked_expense_id) — cash-in-hand now reflects money spent
+- [x] Expense list renders category badge (fixed 500: model had no `category` relationship)
+- [x] Cash-basis formulas read cashbook only (dashboard/partner/investor net profit) — no double subtraction; accrual P&L still reads the Expense table
+- [x] Idempotent backfill for pre-existing expenses (`backfill_expense_cash.py`)
 
 #### Profit & Loss Reports ✅
 - [x] Monthly P&L report
@@ -186,6 +191,9 @@
 #### Admin Actions ✅
 - [x] Extend trial (add X days)
 - [x] Activate paid subscription manually (for bank transfers)
+- [x] Quick Activate — plan (Basic/Premium) + duration (1/2/3/6/12 months or custom days) + notes; activates immediately with NO payment record (gifts, free trials, manual deals); payment verification flow kept alongside
+- [x] Access gating — active subscription window grants writes (Basic unlocks without the premium flag); expired/cancelled/suspended or past-period access is denied even if the premium flag is stale
+- [x] Daily scheduler expires paid subscriptions past their period end and clears the premium flag (lazy check also denies between cron runs)
 - [x] Suspend user account (with reason)
 - [x] Unsuspend user account
 - [x] Admin action logging (audit trail)
