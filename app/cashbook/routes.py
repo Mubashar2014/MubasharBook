@@ -39,6 +39,7 @@ def list_entries():
         period=period,
         subtotal_in=subtotal_in,
         subtotal_out=subtotal_out,
+        net=subtotal_in - subtotal_out,
     )
 
 

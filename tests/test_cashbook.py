@@ -255,3 +255,34 @@ def test_delete_other_shops_entry_refused(logged_in_client, app, second_user):
 
     with app.app_context():
         assert db.session.get(CashEntry, entry_id) is not None
+
+
+def test_cashbook_shows_final_net_total_row(logged_in_client, app):
+    """tfoot ends with a highlighted Net (In − Out) row = subtotal_in - subtotal_out."""
+    logged_in_client.get('/dashboard')  # seeds 100000 opening capital
+
+    for kind, amt, desc, day in (('in', 50000, 'Net row cash in', '2024-06-15'),
+                                 ('out', 10000, 'Net row cash out', '2024-06-16')):
+        logged_in_client.post('/cashbook/add', data={
+            'entry_type': kind,
+            'amount': amt,
+            'description': desc,
+            'entry_date': day,
+            'linked_stock_id': 0,
+        })
+
+    resp = logged_in_client.get('/cashbook/')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+
+    # subtotals
+    assert '+Rs 150,000' in html   # 100000 opening + 50000 in
+    assert '-Rs 10,000' in html
+
+    # the final net row exists and carries the net figure
+    net_row = html.split('Net (In − Out)')[0].rsplit('<tr', 1)[-1] + \
+        'Net (In − Out)' + html.split('Net (In − Out)', 1)[1].split('</tr>', 1)[0]
+    assert '+Rs 140,000' in net_row
+    assert 'Rs 10,000' not in net_row   # no raw subtotal leaked into the net row
+    # highlighted band (gold tint)
+    assert 'rgba(201,169,89,0.28)' in net_row

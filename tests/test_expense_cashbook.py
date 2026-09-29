@@ -313,3 +313,34 @@ def test_backfill_recalculates_running_balance(app, test_user):
         opening = CashEntry.query.filter_by(description=OPENING_CAPITAL_DESC).first()
         assert opening is not None
         assert float(opening.balance_after) == 100000.0
+
+
+def test_expense_counted_once_in_cashbook_net_row(logged_in_client, app, test_user):
+    """Expense appears as a cash-out row, so it is in the Net (In - Out) figure
+    exactly once — and that net equals the running cash balance."""
+    _add_expense_via_route(logged_in_client, app, test_user, amount='15000',
+                           desc='Bijli for net row')
+
+    with app.app_context():
+        entries = CashEntry.query.filter_by(shop_id=_shop_id(test_user)).all()
+        tot_in = sum(float(e.amount) for e in entries if e.entry_type == 'in')
+        tot_out = sum(float(e.amount) for e in entries if e.entry_type == 'out')
+        net = tot_in - tot_out
+        last_balance = float(
+            max((e for e in entries if e.balance_after is not None),
+                key=lambda e: e.id).balance_after
+        )
+
+    resp = logged_in_client.get('/cashbook/')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+
+    assert 'Net (In − Out)' in html
+    expected = '+Rs {:,.0f}'.format(net)
+    assert expected in html
+    assert 'Expense: Tea &amp; Misc — Bijli for net row' in html
+
+    # no double-subtract: net is in - out (expense only once) AND equals cash in hand
+    assert net == last_balance
+    assert net == tot_in - tot_out
+    assert '-Rs 15,000' in html

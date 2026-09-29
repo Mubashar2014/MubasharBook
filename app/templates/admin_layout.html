@@ -1,64 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Admin Panel{% endblock %} - Mubashar's Book</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=9">
-</head>
-<body>
-    <!-- Admin Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('admin.dashboard') }}">
-                <strong>📊 Admin Panel</strong>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" 
-                           href="{{ url_for('admin.dashboard') }}">
-                            Dashboard
-                        </a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
-                           data-bs-toggle="dropdown">
-                            👤 {{ current_user.owner_name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
+{% extends "base.html" %}
+
+{% block title %}Admin Panel — Mubashar's Book{% endblock %}
+
+{% block extra_css %}
+<style>
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.flash-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.flash-msg {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    animation: flashIn 0.3s ease;
+}
+@keyframes flashIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.flash-success { background: #EDF5F0; color: #2E5941; border: 1px solid #2E5941; }
+.flash-warning { background: #FDF8EC; color: #8A6A1E; border: 1px solid #C9A959; }
+.flash-danger { background: #FDF0EE; color: #A13D2E; border: 1px solid #A13D2E; }
+.flash-info { background: #EDF5F0; color: #2E5941; border: 1px solid #DDD4B8; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
+                <i data-lucide="shield-check" style="width:20px;height:20px;"></i>
+            </div>
+            <div class="brand-name">Admin Panel</div>
+        </div>
+
+        <div class="side-section-label">Manage</div>
+        <a class="side-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+            <span class="ic"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span> Overview
+        </a>
+        <a class="side-link {% if request.endpoint in ('admin.users', 'admin.user_detail') %}active{% endif %}" href="{{ url_for('admin.users') }}">
+            <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Users
+        </a>
+
+        <div class="side-section-label">Operations</div>
+        <a class="side-link {% if request.endpoint == 'admin.pending_payments' %}active{% endif %}" href="{{ url_for('admin.pending_payments') }}">
+            <span class="ic"><i data-lucide="credit-card" style="width:18px;height:18px;"></i></span> Payments
+            {% if pending_payments_count %}
+            <span class="pl-tag" style="background:#A13D2E;color:#fff;">{{ pending_payments_count }}</span>
+            {% endif %}
+        </a>
+
+        <div class="side-section-label">Email</div>
+        <a class="side-link {% if request.endpoint == 'admin.email_logs' %}active{% endif %}" href="{{ url_for('admin.email_logs') }}">
+            <span class="ic"><i data-lucide="mail" style="width:18px;height:18px;"></i></span> Email Logs
+        </a>
+        <a class="side-link {% if request.endpoint == 'admin.test_email' %}active{% endif %}" href="{{ url_for('admin.test_email') }}">
+            <span class="ic"><i data-lucide="send" style="width:18px;height:18px;"></i></span> Test Email
+        </a>
+
+        <div class="side-section-label">Audit</div>
+        <a class="side-link {% if request.endpoint == 'admin.activity_log' %}active{% endif %}" href="{{ url_for('admin.activity_log') }}">
+            <span class="ic"><i data-lucide="scroll-text" style="width:18px;height:18px;"></i></span> Activity Log
+        </a>
+
+        <div class="side-section-label">Account</div>
+        <a class="side-link" href="{{ url_for('auth.logout') }}">
+            <span class="ic"><i data-lucide="log-out" style="width:18px;height:18px;"></i></span> Logout
+        </a>
+        <div style="padding:6px 16px 0;font-family:'Inter',sans-serif;font-size:12px;color:#8A8578;">
+            {{ current_user.owner_name }}
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="app-main">
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i data-lucide="menu" style="width:20px;height:20px;"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>{% block page_title %}Admin{% endblock %}</h1>
+                    <div class="path">{% block page_path %}Admin Panel{% endblock %}</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-avatar" title="{{ current_user.owner_name }}">
+                    {{ (current_user.owner_name or 'A')[:1]|upper }}
+                </div>
             </div>
         </div>
-    </nav>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="container-fluid mt-3">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
+        <div class="content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                    <div class="flash-msg flash-{{ 'danger' if category == 'error' else category }}">
+                        <i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'warning' %}alert-triangle{% elif category == 'danger' or category == 'error' %}x-circle{% elif category == 'info' %}info{% else %}message-circle{% endif %}" style="width:18px;height:18px;flex-shrink:0;"></i>
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" aria-label="Dismiss" style="margin-left:auto;background:none;border:none;color:inherit;cursor:pointer;padding:0;">
+                            <i data-lucide="x" style="width:16px;height:16px;"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
         </div>
-        {% endif %}
-    {% endwith %}
-
-    <!-- Main Content -->
-    {% block content %}{% endblock %}
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}{% endblock %}
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}

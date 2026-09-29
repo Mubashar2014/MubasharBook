@@ -1,8 +1,10 @@
 {% extends "admin_layout.html" %}
 {% block title %}Pending Payments — Admin{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block page_path %}Admin / Operations / Pending Payments{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 1200px; margin: 40px auto;">
+<div class="container" style="max-width: 1200px; margin: 0 auto;">
     <div style="margin-bottom: 24px;">
         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">💳 Pending Payment Verifications</h1>
         <p style="color: var(--ink-faint);">Review and approve user payment submissions</p>
@@ -143,7 +145,7 @@
     {% endif %}
 
     <div style="margin-top: 32px; text-align: center;">
-        <a href="{{ url_for('admin.dashboard') }}" style="color: var(--ink-faint);">← Back to Dashboard</a>
+        <a href="{{ url_for('admin.dashboard') }}" style="color: var(--ink-faint);">← Overview</a>
     </div>
 </div>
 {% endblock %}

@@ -1,33 +1,136 @@
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import calendar
-from flask import render_template, request, redirect, url_for, flash, jsonify
-from flask_login import current_user
+import json
+import os
+from flask import (render_template, request, redirect, url_for, flash,
+                   current_app, has_request_context)
+from flask_login import login_required, current_user
 from sqlalchemy import func, or_
 from app.admin import admin_bp
 from app.admin.middleware import admin_required
 from app.extensions import db
-from app.models.user import User
+from app.models.user import User, Investor
 from app.models.shop import Shop
 from app.models.subscription import Subscription
 from app.models.payment import Payment
 from app.models.admin_log import AdminLog
+from app.models.stock import StockItem
+from app.models.cashbook import CashEntry
+from app.models.expense import Expense, ExpenseCategory
+from app.models.khata import KhataEntry
+from app.models.notification import Notification
+from app.models.email_log import EmailLog
+from app.models.shareholder import Partner, SplitRule, Period, PeriodSnapshot
+
+
+@admin_bp.app_context_processor
+def inject_admin_badges():
+    """Sidebar badge for the admin panel.
+
+    This is registered app-wide, so it runs for every template — including
+    emails, which are often rendered with no request context at all (signup
+    side effects, background jobs). There `current_user` is None, and
+    touching it raised AttributeError, which aborted the render and made
+    every email fail. Stay strictly inert outside an admin page.
+    """
+    if not has_request_context() or request.blueprint != 'admin':
+        return {}
+    if not (current_user.is_authenticated and getattr(current_user, 'is_admin', False)):
+        return {}
+    return {'pending_payments_count': Payment.query.filter_by(status='pending').count()}
 
 
 @admin_bp.route('/')
 @admin_required
 def dashboard():
-    """Admin dashboard with overview stats and user list."""
-    
-    # Get filter parameters
+    """Overview: headline stats plus anything that needs attention right now.
+
+    The searchable user list lives on its own page (admin.users) so this one
+    stays a single-purpose screen.
+    """
+    total_users = User.query.filter_by(is_admin=False).count()
+
+    def _status_count(status):
+        # Distinct non-admin users whose shop is in this status. The admin's
+        # own shop is excluded so the breakdown adds up to total_users.
+        return db.session.query(func.count(func.distinct(User.id))).join(
+            Shop, Shop.user_id == User.id
+        ).join(
+            Subscription, Subscription.shop_id == Shop.id
+        ).filter(
+            User.is_admin == False,
+            Subscription.status == status,
+        ).scalar() or 0
+
+    trial_users = _status_count('trial')
+    active_users = _status_count('active')
+    expired_users = _status_count('expired')
+    suspended_users = _status_count('suspended')
+
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    new_signups = User.query.filter(
+        User.is_admin == False,
+        User.created_at >= week_ago
+    ).count()
+
+    total_revenue = db.session.query(func.sum(Payment.amount)).filter(
+        Payment.status == 'completed'
+    ).scalar() or 0
+
+    pending_payments_count = Payment.query.filter_by(status='pending').count()
+
+    # Trials ending within 3 days (including already-overdue)
+    soon = datetime.utcnow() + timedelta(days=3)
+    expiring_trials = (
+        db.session.query(User, Subscription)
+        .join(Shop, Shop.user_id == User.id)
+        .join(Subscription, Subscription.shop_id == Shop.id)
+        .filter(
+            User.is_admin == False,
+            Subscription.status == 'trial',
+            Subscription.trial_end <= soon,
+        )
+        .order_by(Subscription.trial_end.asc())
+        .limit(5)
+        .all()
+    )
+
+    recent_signups = User.query.filter_by(is_admin=False).order_by(
+        User.created_at.desc()
+    ).limit(5).all()
+
+    recent_activity = AdminLog.query.order_by(
+        AdminLog.created_at.desc()
+    ).limit(6).all()
+
+    return render_template('admin/dashboard.html',
+        total_users=total_users,
+        trial_users=trial_users,
+        active_users=active_users,
+        expired_users=expired_users,
+        suspended_users=suspended_users,
+        new_signups=new_signups,
+        total_revenue=float(total_revenue),
+        pending_payments_count=pending_payments_count,
+        expiring_trials=expiring_trials,
+        recent_signups=recent_signups,
+        recent_activity=recent_activity,
+        today=date.today(),
+    )
+
+
+@admin_bp.route('/users')
+@admin_required
+def users():
+    """Searchable, filterable user list."""
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', 'all')
     page = request.args.get('page', 1, type=int)
     per_page = 50
-    
-    # Base query - get all users with LEFT JOIN (so users without shops still show)
+
+    # LEFT JOIN so users without shops still show
     query = User.query.outerjoin(Shop).outerjoin(Subscription, Shop.id == Subscription.shop_id)
-    
-    # Apply search filter
+
     if search:
         query = query.filter(
             or_(
@@ -37,8 +140,7 @@ def dashboard():
                 Shop.name.ilike(f'%{search}%')
             )
         )
-    
-    # Apply status filter
+
     if status_filter == 'trial':
         query = query.filter(Subscription.status == 'trial')
     elif status_filter == 'active':
@@ -47,72 +149,54 @@ def dashboard():
         query = query.filter(Subscription.status == 'expired')
     elif status_filter == 'suspended':
         query = query.filter(Subscription.status == 'suspended')
-    
-    # Exclude admin users from the list
+
     query = query.filter(User.is_admin == False)
-    
-    # Paginate
+
     users_pagination = query.order_by(User.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
-    
-    # Calculate stats - simple counts without joins
-    total_users = User.query.filter_by(is_admin=False).count()
-    
-    # Users by subscription status - only count those WITH subscriptions
-    trial_users = db.session.query(func.count(Subscription.id)).join(
-        Shop, Subscription.shop_id == Shop.id
-    ).filter(
-        Subscription.status == 'trial'
-    ).scalar() or 0
-    
-    active_users = db.session.query(func.count(Subscription.id)).join(
-        Shop, Subscription.shop_id == Shop.id
-    ).filter(
-        Subscription.status == 'active'
-    ).scalar() or 0
-    
-    expired_users = db.session.query(func.count(Subscription.id)).join(
-        Shop, Subscription.shop_id == Shop.id
-    ).filter(
-        Subscription.status == 'expired'
-    ).scalar() or 0
-    
-    suspended_users = db.session.query(func.count(Subscription.id)).join(
-        Shop, Subscription.shop_id == Shop.id
-    ).filter(
-        Subscription.status == 'suspended'
-    ).scalar() or 0
-    
-    # New signups (last 7 days)
-    week_ago = datetime.utcnow() - timedelta(days=7)
-    new_signups = User.query.filter(
-        User.is_admin == False,
-        User.created_at >= week_ago
-    ).count()
-    
-    # Total revenue (completed payments)
-    total_revenue = db.session.query(func.sum(Payment.amount)).filter(
-        Payment.status == 'completed'
-    ).scalar() or 0
-    
-    # Pending payments count
-    pending_payments_count = Payment.query.filter_by(status='pending').count()
-    
-    return render_template('admin/dashboard.html',
+
+    return render_template('admin/users.html',
         users=users_pagination.items,
         pagination=users_pagination,
-        total_users=total_users,
-        trial_users=trial_users,
-        active_users=active_users,
-        expired_users=expired_users,
-        suspended_users=suspended_users,
-        new_signups=new_signups,
-        total_revenue=float(total_revenue),
-        pending_payments_count=pending_payments_count,
         search=search,
         status_filter=status_filter,
     )
+
+
+def _count_user_data(user, shop):
+    """Row counts shown in the delete-confirmation modal (and kept in the audit log)."""
+    counts = {'User accounts': 1}
+    if shop:
+        sid = shop.id
+        sub_ids = [r[0] for r in db.session.query(Subscription.id).filter(Subscription.shop_id == sid)]
+
+        counts['Shop'] = 1
+        counts['Subscription'] = len(sub_ids)
+        counts['Investors'] = Investor.query.filter_by(shop_id=sid).count()
+        counts['Shareholders'] = Partner.query.filter_by(shop_id=sid).count()
+        counts['Split rules'] = SplitRule.query.filter_by(shop_id=sid).count()
+        counts['Periods'] = Period.query.filter_by(shop_id=sid).count()
+        counts['Period snapshots'] = PeriodSnapshot.query.filter_by(shop_id=sid).count()
+        counts['Stock items'] = StockItem.query.filter_by(shop_id=sid).count()
+        counts['Cashbook entries'] = CashEntry.query.filter_by(shop_id=sid).count()
+        counts['Expenses'] = Expense.query.filter_by(shop_id=sid).count()
+        counts['Expense categories'] = ExpenseCategory.query.filter_by(shop_id=sid).count()
+        counts['Khata entries'] = KhataEntry.query.filter_by(shop_id=sid).count()
+        counts['Payments'] = Payment.query.filter(
+            or_(Payment.user_id == user.id, Payment.subscription_id.in_(sub_ids))
+        ).count()
+
+    counts['Notifications'] = Notification.query.filter_by(user_id=user.id).count()
+    counts['Email logs'] = EmailLog.query.filter_by(user_id=user.id).count()
+    return counts
+
+
+def _revenue_for(user):
+    """Completed payments that would disappear if this user were deleted."""
+    return float(db.session.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+        Payment.user_id == user.id, Payment.status == 'completed'
+    ).scalar() or 0)
 
 
 @admin_bp.route('/user/<int:user_id>')
@@ -140,13 +224,29 @@ def user_detail(user_id):
         AdminLog.target_type == 'user',
         AdminLog.target_id == user_id
     ).order_by(AdminLog.created_at.desc()).limit(20).all()
-    
+
+    # Where "Back" should land, so a search is never thrown away
+    back_args = {
+        'search': request.args.get('search', '').strip(),
+        'status': request.args.get('status', 'all'),
+        'page': request.args.get('page', 1, type=int),
+    }
+
+    # Delete confirmation: email, or phone when the account has no email
+    confirm_label = user.email or user.phone or ''
+    confirm_hint = 'email' if user.email else 'phone number'
+
     return render_template('admin/user_detail.html',
         user=user,
         shop=shop,
         subscription=subscription,
         payments=payments,
         admin_logs=admin_logs,
+        back_args=back_args,
+        data_counts=_count_user_data(user, shop),
+        revenue_impact=_revenue_for(user),
+        confirm_label=confirm_label,
+        confirm_hint=confirm_hint,
     )
 
 
@@ -648,3 +748,161 @@ def reject_payment(payment_id):
     
     flash(f'Payment rejected.', 'success')
     return redirect(url_for('admin.pending_payments'))
+
+
+# ====== AUDIT LOG ======
+
+@admin_bp.route('/activity')
+@admin_required
+def activity_log():
+    """Every admin action, across all targets (the per-user page only shows 20)."""
+    page = request.args.get('page', 1, type=int)
+    action_filter = request.args.get('action', '').strip()
+    admin_filter = request.args.get('admin', type=int)
+
+    query = AdminLog.query
+    if action_filter:
+        query = query.filter(AdminLog.action == action_filter)
+    if admin_filter:
+        query = query.filter(AdminLog.admin_user_id == admin_filter)
+
+    logs_pagination = query.order_by(AdminLog.created_at.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+
+    actions = [r[0] for r in db.session.query(AdminLog.action).distinct().all()]
+    admins = db.session.query(AdminLog.admin_user_id, User.owner_name).join(
+        User, User.id == AdminLog.admin_user_id
+    ).distinct().all()
+
+    return render_template('admin/activity.html',
+        logs=logs_pagination.items,
+        pagination=logs_pagination,
+        actions=sorted(actions),
+        admins=admins,
+        action_filter=action_filter,
+        admin_filter=admin_filter,
+    )
+
+
+# ====== COMPLETE USER DELETION ======
+
+def _payment_proof_files(user, shop):
+    """Filenames of uploaded proof screenshots that belong to this user."""
+    criteria = [Payment.user_id == user.id]
+    if shop:
+        sub_ids = [r[0] for r in db.session.query(Subscription.id).filter(Subscription.shop_id == shop.id)]
+        if sub_ids:
+            criteria = [or_(Payment.user_id == user.id, Payment.subscription_id.in_(sub_ids))]
+    return [p.payment_proof for p in Payment.query.filter(*criteria).all() if p.payment_proof]
+
+
+def _delete_user_rows(user, shop):
+    """Hard-delete every row this user owns.
+
+    All 17 foreign keys into users/shops are NO ACTION, so children must go
+    first. Returns a {label: rows_deleted} dict for the audit log.
+    """
+    deleted = {}
+    uid = user.id
+
+    def _purge(label, query, *criteria):
+        n = query.filter(*criteria).delete(synchronize_session=False)
+        if n:
+            deleted[label] = deleted.get(label, 0) + n
+
+    if shop:
+        sid = shop.id
+        sub_ids = [r[0] for r in db.session.query(Subscription.id).filter(Subscription.shop_id == sid)]
+
+        _purge('period snapshots', PeriodSnapshot.query, PeriodSnapshot.shop_id == sid)
+        _purge('shareholders', Partner.query, Partner.shop_id == sid)
+        _purge('investors', Investor.query, Investor.shop_id == sid)
+        _purge('periods', Period.query, Period.shop_id == sid)
+        _purge('split rules', SplitRule.query, SplitRule.shop_id == sid)
+        _purge('khata entries', KhataEntry.query, KhataEntry.shop_id == sid)
+        _purge('expenses', Expense.query, Expense.shop_id == sid)
+        _purge('expense categories', ExpenseCategory.query, ExpenseCategory.shop_id == sid)
+        _purge('cashbook entries', CashEntry.query, CashEntry.shop_id == sid)
+        _purge('stock items', StockItem.query, StockItem.shop_id == sid)
+
+        # payments reference both users and subscriptions -> before either
+        _purge('payments', Payment.query,
+               or_(Payment.user_id == uid, Payment.subscription_id.in_(sub_ids)))
+
+        _purge('subscriptions', Subscription.query, Subscription.shop_id == sid)
+    else:
+        _purge('payments', Payment.query, Payment.user_id == uid)
+
+    _purge('notifications', Notification.query, Notification.user_id == uid)
+    _purge('email logs', EmailLog.query, EmailLog.user_id == uid)
+
+    if shop:
+        _purge('shop', Shop.query, Shop.user_id == uid)
+
+    db.session.expunge(user)
+    _purge('user account', User.query, User.id == uid)
+
+    return deleted
+
+
+@admin_bp.route('/user/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    """Permanently delete a user and every row they own. Irreversible."""
+    user = User.query.get_or_404(user_id)
+    owner_name = user.owner_name
+
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+
+    if user.is_admin:
+        flash('Admin accounts cannot be deleted.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+
+    # Type-to-confirm. Accounts may have no email, so fall back to the phone.
+    confirm_label = user.email or user.phone or ''
+    supplied = (request.form.get('confirm_text') or '').strip()
+
+    if not confirm_label or supplied.lower() != confirm_label.lower():
+        flash('Confirmation did not match — nothing was deleted.', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+
+    shop = user.shop
+    counts = _count_user_data(user, shop)
+    revenue = _revenue_for(user)
+    proofs = _payment_proof_files(user, shop)
+    summary = ', '.join(f'{v} {k.lower()}' for k, v in counts.items() if v)
+
+    # Audit row first — its FK points at the admin, so it survives the purge
+    AdminLog.log_action(
+        admin_user_id=current_user.id,
+        action='user_deleted',
+        description=(
+            f'Permanently deleted {owner_name} ({confirm_label}). '
+            f'Removed: {summary}. Completed revenue removed: Rs {revenue:,.0f}.'
+        ),
+        target_type='user',
+        target_id=user_id,
+        changes=json.dumps({'counts': counts, 'revenue_removed': revenue}),
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent'),
+    )
+
+    _delete_user_rows(user, shop)
+    db.session.commit()
+
+    # Proof screenshots only — after the commit so a failure here loses nothing.
+    # static_folder is overridden in create_app(), so use it, not root_path.
+    proof_dir = os.path.join(current_app.static_folder, 'payment_proofs')
+    for fname in proofs:
+        path = os.path.join(proof_dir, os.path.basename(fname))
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    flash(f'{owner_name} and all of their data were permanently deleted.', 'success')
+    return redirect(url_for('admin.users'))

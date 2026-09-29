@@ -1,22 +1,14 @@
 {% extends "admin_layout.html" %}
 {% block title %}Test Email Sending — Admin{% endblock %}
+{% block page_title %}Test Email{% endblock %}
+{% block page_path %}Admin / Email / Test Email{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 800px; margin: 40px auto;">
+<div class="container" style="max-width: 800px; margin: 0 auto;">
     <div style="margin-bottom: 24px;">
         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">📧 Test Email Sending</h1>
         <p style="color: var(--ink-faint);">Send test emails to verify your email configuration is working.</p>
     </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ category }}" style="padding: 16px; border-radius: var(--radius); margin-bottom: 20px; {% if category == 'success' %}background: #F0F9F4; color: #1B5E3A; border: 1px solid #D1EBD8;{% elif category == 'danger' %}background: #FDF0EE; color: #A13D2E; border: 1px solid #F5D6D4;{% endif %}">
-        {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
 
     <div class="card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 32px;">
         <form method="POST">
@@ -57,7 +49,7 @@
             View Email Logs
         </a>
         <a href="{{ url_for('admin.dashboard') }}" style="margin-left: 12px; color: var(--ink-faint);">
-            ← Back to Dashboard
+            ← Overview
         </a>
     </div>
 </div>

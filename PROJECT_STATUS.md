@@ -56,6 +56,8 @@
 - [x] Automatic balance tracking
 - [x] Expense entries auto-created from the expense form
 - [x] Entry history
+- [x] Subtotals + highlighted final **Net (In − Out)** total row (last tfoot row, stacks to its own card on mobile)
+- [x] Delete button hidden for expense-linked rows (route already refused them)
 
 #### Khata/Ledger ✅
 - [x] Receivables (customers owe you)
@@ -442,19 +444,25 @@
 
 ---
 
-### 6. Advanced Admin Features (0% Complete)
+### 6. Advanced Admin Features (60% Complete)
+
+#### What Exists (added 2026-09-29 — admin panel reorganization):
+- [x] Grouped left sidebar (Manage / Operations / Email / Audit / Account)
+- [x] Overview page split off from the user list (stats, needs attention, recent signups, recent activity)
+- [x] User search page with status filter + pagination (back link keeps search/filter/page)
+- [x] Global Activity Log with filters by action and by admin (`/admin/activity`)
+- [x] Manual payment verification workflow (verify/reject with proof screenshot)
+- [x] User detail page: trial countdown, payment history, per-user audit history
+- [x] **Delete user permanently** — hard-deletes all 17 owned tables + proof files, type-to-confirm, blocks admins/self, revenue impact warning, audit row survives
+- [x] Pending-payment count badge in the sidebar
 
 #### What's Missing:
 - [ ] Export users to CSV
 - [ ] Bulk actions (suspend multiple, email multiple)
 - [ ] Send custom email to specific user
-- [ ] View user activity logs (logins, actions)
 - [ ] Impersonate user (view as user)
-- [ ] Manual payment verification workflow
 - [ ] Refund management
 - [ ] Subscription notes/tags
-- [ ] User search with advanced filters
-- [ ] Admin dashboard widgets
 - [ ] Revenue projections
 - [ ] Alert system (e.g., high churn rate)
 
@@ -599,17 +607,23 @@ app/
 │   ├── notification.py      ✅ Notifications
 │   └── admin_log.py         ✅ Admin audit log
 └── templates/
-    ├── admin_layout.html    ✅ Admin base template
+    ├── admin_layout.html    ✅ Admin sidebar layout (extends base.html)
     └── admin/
-        ├── dashboard.html   ✅ Admin dashboard
-        └── user_detail.html ✅ User management
+        ├── dashboard.html   ✅ Overview (stats + needs attention)
+        ├── users.html       ✅ Searchable/filterable user list
+        ├── user_detail.html ✅ User management + Danger Zone delete
+        ├── pending_payments.html ✅ Payment verification
+        ├── email_logs.html  ✅ Email history
+        ├── test_email.html  ✅ Send test email
+        └── activity.html    ✅ Global admin audit log
 
 migrations/                   ✅ Database migrations
 manage.py                    ✅ Management script (deprecated, use cli.py)
 debug_admin.py              🔧 Debug script
 fix_admin_flag.py           🔧 Migration helper
 migrate_existing_users.py   🔧 Migration helper
-ADMIN_SETUP.md              📄 Admin documentation
+ADMIN_SETUP.md              📄 Admin build notes
+ADMIN_GUIDE.md              📄 Admin user guide (how to use the panel)
 PROJECT_STATUS.md           📄 This file
 ```
 
@@ -709,13 +723,14 @@ app/
 
 ## 📞 SUPPORT & DOCUMENTATION
 
-- **Admin Panel:** See ADMIN_SETUP.md
+- **Admin Guide (start here):** See ADMIN_GUIDE.md
+- **Admin Panel build notes:** See ADMIN_SETUP.md
 - **Database Models:** Check app/models/ directory
 - **API Routes:** Check app/*/routes.py files
 - **Configuration:** See app/config.py
 
 ---
 
-**Last Updated:** 2026-09-23  
+**Last Updated:** 2026-09-29  
 **Project:** Mubashar's Book  
-**Version:** v2.0 (Subscription Management Update)
+**Version:** v2.1 (Admin panel reorganization + hard user delete)

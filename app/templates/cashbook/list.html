@@ -61,7 +61,7 @@
                 </td>
                 <td data-label="Balance" class="num"><strong>{{ 'Rs {:,.0f}'.format(entry.balance_after | float) if entry.balance_after is not none else 'Rs 0' }}</strong></td>
                 <td data-label="Actions">
-                    {% if entry.linked_stock_id is none and entry.description != 'Opening capital' %}
+                    {% if entry.linked_stock_id is none and entry.linked_expense_id is none and entry.description != 'Opening capital' %}
                     <form method="POST" action="{{ url_for('cashbook.delete_entry', entry_id=entry.id) }}" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-outline btn-sm" style="color:var(--cashout);border-color:var(--cashout);"
@@ -82,6 +82,16 @@
                 <td data-label="Cash Out" class="num" style="color:var(--cashout);">-{{ 'Rs {:,.0f}'.format(subtotal_out) }}</td>
                 <td class="num"></td>
                 <td></td>
+            </tr>
+            <tr style="border-top:2px solid var(--ink);background:rgba(201,169,89,0.28);font-weight:800;">
+                <td colspan="6">
+                    <span style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;width:100%;">
+                        <span style="font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;">Net (In − Out)</span>
+                        <span style="font-size:17px;color:{{ 'var(--cashin)' if net >= 0 else 'var(--cashout)' }};">
+                            {% if net >= 0 %}+{% else %}&minus;{% endif %}{{ 'Rs {:,.0f}'.format(net | abs) }}
+                        </span>
+                    </span>
+                </td>
             </tr>
         </tfoot>
     </table>
