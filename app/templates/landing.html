@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Mubashar's Book — Apni dukan ka poora hisaab{% endblock %}
+{% block title %}Mubashar Khata — Apni dukan ka poora hisaab{% endblock %}
 
 {% block body %}
 <!-- ========== NAVBAR ========== -->
@@ -7,10 +7,7 @@
     <div class="mkt-nav-inner">
         <div class="mkt-nav-left">
             <a href="/" class="mkt-brand">
-                <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
-                    <i data-lucide="book-open" style="width:20px;height:20px;"></i>
-                </div>
-                <span style="font-family:var(--font-serif); font-weight:700; font-size:20px; color:var(--ink);">Mubashar's Book</span>
+                <img src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="128" height="40" style="display:block; height:40px; width:auto;">
             </a>
         </div>
         <div class="mkt-nav-right">
@@ -34,7 +31,7 @@
         <div class="hero-content animate-on-scroll">
             <div class="hero-badge">
                 <i data-lucide="sparkles" style="width:14px;height:14px;"></i>
-                Mubashar's Book ke saath apni dukan ka poora hisaab
+                Mubashar Khata ke saath apni dukan ka poora hisaab
             </div>
             <h1 class="hero-title">
                 Apni dukan ka poora hisaab
@@ -128,7 +125,7 @@
         <div class="section-header animate-on-scroll">
             <span class="section-eyebrow"><i data-lucide="lightbulb" style="width:14px;height:14px;"></i> How it works</span>
             <h2 class="section-title">Three problems, one simple solution</h2>
-            <p class="section-desc">Har mobile shop ka same masla hai. Mubashar's Book sab solve karta hai.</p>
+            <p class="section-desc">Har mobile shop ka same masla hai. Mubashar Khata sab solve karta hai.</p>
         </div>
 
         <!-- Problem 01 -->
@@ -140,7 +137,7 @@
                 </div>
                 <h3 class="problem-label">Stock management</h3>
                 <h4 class="problem-heading">Kabhi pata nahi chalta<br>kitna stock bacha hai</h4>
-                <p class="problem-desc">Manual counting mein galtiyan aam hain. Mubashar's Book mein har phone ki entry, quantity aur status ek nazar mein.</p>
+                <p class="problem-desc">Manual counting mein galtiyan aam hain. Mubashar Khata mein har phone ki entry, quantity aur status ek nazar mein.</p>
             </div>
             <div class="problem-compare">
                 <div class="compare-card before">
@@ -154,7 +151,7 @@
                 </div>
                 <div class="compare-arrow"><i data-lucide="arrow-right" style="width:20px;height:20px;"></i></div>
                 <div class="compare-card after">
-                    <div class="compare-label"><i data-lucide="smartphone" style="width:14px;height:14px;"></i> Ab — Mubashar's Book</div>
+                    <div class="compare-label"><i data-lucide="smartphone" style="width:14px;height:14px;"></i> Ab — Mubashar Khata</div>
                     <div class="compare-content">
                         <div class="compare-row"><span>Samsung A15</span><span class="num">3 in stock</span></div>
                         <div class="compare-row"><span>iPhone 13 (Used)</span><span class="num">1 in stock</span></div>
@@ -173,7 +170,7 @@
                 </div>
                 <h3 class="problem-label">Cashbook & Profit</h3>
                 <h4 class="problem-heading">Din ke akhir mein pata<br>nahi profit hua ya loss</h4>
-                <p class="problem-desc">Cash in/out ka koi structured record nahi hota. Mubashar's Book khud-kaar running balance aur profit/loss nikalta hai.</p>
+                <p class="problem-desc">Cash in/out ka koi structured record nahi hota. Mubashar Khata khud-kaar running balance aur profit/loss nikalta hai.</p>
             </div>
             <div class="problem-compare">
                 <div class="compare-card before">
@@ -186,7 +183,7 @@
                 </div>
                 <div class="compare-arrow"><i data-lucide="arrow-right" style="width:20px;height:20px;"></i></div>
                 <div class="compare-card after">
-                    <div class="compare-label"><i data-lucide="receipt" style="width:14px;height:14px;"></i> Ab — Mubashar's Book</div>
+                    <div class="compare-label"><i data-lucide="receipt" style="width:14px;height:14px;"></i> Ab — Mubashar Khata</div>
                     <div class="compare-content">
                         <div class="compare-row"><span>Cash In (sales)</span><span class="num in">+ Rs 68,000</span></div>
                         <div class="compare-row"><span>Cash Out (rent+stock)</span><span class="num out">- Rs 56,500</span></div>
@@ -276,15 +273,12 @@
     <div class="mkt-footer-inner">
         <div class="mkt-footer-left">
             <a href="/" class="mkt-brand" style="margin-bottom:12px;">
-                <div class="brand-mark" style="width:28px;height:28px;background:var(--gold); color:var(--ink);">
-                    <i data-lucide="book-open" style="width:14px;height:14px;"></i>
-                </div>
-                <span style="font-family:var(--font-serif); font-weight:700; font-size:16px; color:var(--ink);">Mubashar's Book</span>
+                <img src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="112" height="35" style="display:block; height:35px; width:auto;">
             </a>
             <p style="color:var(--ink-faint); font-size:13px;">Apni dukan ka poora hisaab — ek app mein.</p>
         </div>
         <div class="mkt-footer-right">
-            <span>&copy; 2026 Mubashar's Book</span>
+            <span>&copy; 2026 Mubashar Khata</span>
             <span>English / Roman Urdu</span>
             <a href="#">Privacy</a>
             <a href="#">Contact</a>

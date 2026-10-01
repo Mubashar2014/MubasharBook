@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sign up — Mubashar's Book{% endblock %}
+{% block title %}Sign up — Mubashar Khata{% endblock %}
 
 {% block body %}
 <div class="auth-page">
@@ -7,10 +7,7 @@
         <div class="auth-visual">
             <div class="auth-visual-content">
                 <div class="auth-brand">
-                    <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
-                        <i data-lucide="book-open" style="width:22px;height:22px;"></i>
-                    </div>
-                    <span style="font-family:var(--font-serif); font-weight:700; font-size:22px; color:#fff;">Mubashar's Book</span>
+                    <img src="{{ url_for('static', filename='img/logo-dark.png') }}" alt="Mubashar Khata" width="178" height="56" style="display:block; height:56px; width:auto;">
                 </div>
                 <h2>Start your free trial today</h2>
                 <p>7 days ka free trial. Card nahi chahiye. Setup sirf 10 minute mein.</p>
@@ -23,6 +20,7 @@
         </div>
         <div class="auth-form-side">
             <div class="auth-form-card">
+            <img class="auth-logo-mobile" src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="146" height="46" style="">
                 <h1>Create your account</h1>
                 <p class="auth-subtitle">7-day free trial starts now</p>
 
@@ -201,5 +199,8 @@ function togglePassword(inputId, button) {
     .auth-form-card h1 { font-size: 24px; }
     .auth-form-side { padding: 16px; }
 }
+
+.auth-logo-mobile { display: none; height: 46px; width: auto; margin: 0 0 18px; }
+@media (max-width: 991.98px) { .auth-logo-mobile { display: block; } }
 </style>
 {% endblock %}

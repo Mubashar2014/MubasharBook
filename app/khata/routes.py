@@ -4,8 +4,12 @@ from flask_login import login_required
 from app.khata import khata_bp
 from app.models.khata import KhataEntry
 from app.models.cashbook import CashEntry
+from app.models.stock import StockItem
 from app.extensions import db
-from app.utils import get_user_shop, ensure_opening_cash, OPENING_CAPITAL_DESC
+from app.utils import (
+    get_user_shop, ensure_opening_cash, OPENING_CAPITAL_DESC,
+    party_whatsapp_map, wa_share_link, reminder_text,
+)
 from sqlalchemy import func
 
 
@@ -37,12 +41,22 @@ def list_khata():
     total_receivable = sum(float(p.pending_amount) for p in party_summary if p.entry_type == 'receivable')
     total_payable = sum(float(p.pending_amount) for p in party_summary if p.entry_type == 'payable')
 
+    known_numbers = party_whatsapp_map(shop.id)
+    wa_links = {
+        p.party_name: wa_share_link(
+            known_numbers.get(p.party_name),
+            reminder_text(shop.name, p.party_name, p.pending_amount, p.entry_type),
+        )
+        for p in party_summary
+    }
+
     return render_template('khata/list.html',
         party_summary=party_summary,
         all_entries=all_entries,
         total_receivable=total_receivable,
         total_payable=total_payable,
         view=view,
+        wa_links=wa_links,
     )
 
 
@@ -66,6 +80,10 @@ def party_detail(party_name):
         settled_entries=settled,
         total_pending=total_pending,
         entry_type=entry_type,
+        wa_link=wa_share_link(
+            party_whatsapp_map(shop.id).get(party_name),
+            reminder_text(shop.name, party_name, total_pending, entry_type),
+        ) if total_pending > 0 else None,
     )
 
 
@@ -113,4 +131,17 @@ def settle_khata(entry_id):
     db.session.commit()
 
     flash(f'Khata settled — Rs {pending:,.0f} added to cashbook.', 'success')
+
+    # Linked to a phone? Send the settlement receipt right away.
+    if entry.linked_stock_id:
+        item = StockItem.query.filter_by(id=entry.linked_stock_id, shop_id=shop.id).first()
+        if item:
+            if item.purchase_khata_entry_id == entry.id:
+                rtype = 'purchase'
+            elif item.sale_khata_entry_id == entry.id:
+                rtype = 'sale'
+            else:
+                rtype = 'sale' if item.status == 'sold' else 'purchase'
+            return redirect(url_for('stock.receipt', item_id=item.id, type=rtype, settled=1))
+
     return redirect(url_for('khata.party_detail', party_name=entry.party_name))

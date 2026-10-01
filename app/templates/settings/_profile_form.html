@@ -1,0 +1,43 @@
+<form method="POST" action="{{ profile_action }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="form" value="profile">
+
+    <div class="field">
+        <label><i data-lucide="user" style="width:14px;height:14px;"></i> Owner name *</label>
+        {{ profile_form.owner_name(placeholder='Your full name') }}
+        {% for e in profile_form.owner_name.errors %}
+        <div style="font-size:12px;color:#A13D2E;margin-top:4px;">{{ e }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="field">
+        <label><i data-lucide="phone" style="width:14px;height:14px;"></i> Phone number</label>
+        {{ profile_form.phone(placeholder='03XX XXXXXXX') }}
+        {% for e in profile_form.phone.errors %}
+        <div style="font-size:12px;color:#A13D2E;margin-top:4px;">{{ e }}</div>
+        {% endfor %}
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">Must be unique — it identifies your account.</div>
+    </div>
+
+    <div class="field">
+        <label><i data-lucide="languages" style="width:14px;height:14px;"></i> Preferred language</label>
+        {{ profile_form.language() }}
+        {% for e in profile_form.language.errors %}
+        <div style="font-size:12px;color:#A13D2E;margin-top:4px;">{{ e }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="field">
+        <label><i data-lucide="mail" style="width:14px;height:14px;"></i> Email address</label>
+        <input type="email" value="{{ current_user.email or '' }}" readonly style="background:var(--paper-alt);color:var(--ink-faint);cursor:not-allowed;">
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">
+            Your login email — it's verified, so it can't be changed here. Need it changed? Contact support.
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i data-lucide="save" style="width:18px;height:18px;"></i> Save Profile
+        </button>
+    </div>
+</form>

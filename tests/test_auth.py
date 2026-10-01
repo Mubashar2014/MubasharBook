@@ -97,6 +97,26 @@ def test_login_unverified_email_redirects_to_verify(client, test_user):
     assert '/auth/verify' in resp.headers['Location']
 
 
+def test_admin_login_skips_email_verification(client, test_user):
+    # Admins must never be gated on email verification
+    test_user.email_verified_at = None
+    test_user.is_verified = False
+    test_user.is_admin = True
+    db.session.commit()
+
+    resp = client.post('/auth/login', data={
+        'email': 'testuser@test.com',
+        'password': 'password123',
+    }, follow_redirects=False)
+
+    assert resp.status_code == 302
+    assert '/admin' in resp.headers['Location']
+
+    db.session.refresh(test_user)
+    assert test_user.email_verified_at is not None
+    assert test_user.is_verified is True
+
+
 def test_login_with_invalid_credentials(client, test_user):
     resp = client.post('/auth/login', data={
         'email': 'testuser@test.com',

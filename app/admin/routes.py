@@ -906,3 +906,46 @@ def delete_user(user_id):
 
     flash(f'{owner_name} and all of their data were permanently deleted.', 'success')
     return redirect(url_for('admin.users'))
+
+
+# ====== ADMIN'S OWN ACCOUNT ======
+
+@admin_bp.route('/account', methods=['GET', 'POST'])
+@admin_required
+def account():
+    """Profile + change password for the signed-in admin.
+
+    Admins are redirected away from /settings by enforce_read_only(), so they
+    need their own copy of those forms. Reuses the shared helpers and partials.
+    """
+    from app.auth.forms import ProfileForm, ChangePasswordForm
+    from app.utils import apply_profile_update, apply_password_change
+
+    which = request.form.get('form') if request.method == 'POST' else None
+    profile_form = ProfileForm(obj=current_user)
+    password_form = ChangePasswordForm()
+
+    if which == 'password' and password_form.validate_on_submit():
+        error = apply_password_change(
+            current_user, password_form.current_password.data, password_form.password.data
+        )
+        if error:
+            flash(error, 'warning')
+        else:
+            flash('Password changed. Use your new password the next time you log in.', 'success')
+            return redirect(url_for('admin.account') + '#password')
+
+    if which == 'profile' and profile_form.validate_on_submit():
+        error = apply_profile_update(
+            current_user, profile_form.owner_name.data, profile_form.phone.data,
+            profile_form.language.data
+        )
+        if error:
+            flash(error, 'warning')
+        else:
+            flash('Profile updated.', 'success')
+            return redirect(url_for('admin.account') + '#profile')
+
+    return render_template('admin/account.html',
+                           profile_form=profile_form,
+                           password_form=password_form)

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Panel — Mubashar's Book{% endblock %}
+{% block title %}Admin Panel — Mubashar Khata{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -31,11 +31,11 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
-                <i data-lucide="shield-check" style="width:20px;height:20px;"></i>
-            </div>
-            <div class="brand-name">Admin Panel</div>
+        <div class="brand" style="flex-direction:column; align-items:flex-start; gap:8px;">
+            <a href="{{ url_for('admin.dashboard') }}" style="line-height:0;" aria-label="Mubashar Khata — Admin">
+                <img class="brand-logo" src="{{ url_for('static', filename='img/logo-dark.png') }}" alt="Mubashar Khata" width="121" height="38" style="height:38px; width:auto; display:block;">
+            </a>
+            <div style="font-size:10.5px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#C9A959;">Admin Panel</div>
         </div>
 
         <div class="side-section-label">Manage</div>
@@ -68,6 +68,9 @@
         </a>
 
         <div class="side-section-label">Account</div>
+        <a class="side-link {% if request.endpoint == 'admin.account' %}active{% endif %}" href="{{ url_for('admin.account') }}">
+            <span class="ic"><i data-lucide="user-cog" style="width:18px;height:18px;"></i></span> My Account
+        </a>
         <a class="side-link" href="{{ url_for('auth.logout') }}">
             <span class="ic"><i data-lucide="log-out" style="width:18px;height:18px;"></i></span> Logout
         </a>

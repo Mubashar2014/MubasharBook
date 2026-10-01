@@ -63,7 +63,13 @@ class User(UserMixin, db.Model):
 
     @property
     def is_read_only(self):
-        """Account is read-only when there is no active trial or paid subscription."""
+        """Account is read-only when there is no active trial or paid subscription.
+
+        Admins are exempt: their own settings, password change and panel
+        actions must keep working regardless of the trial clock.
+        """
+        if self.is_admin:
+            return False
         return not self.has_active_access
 
     def start_trial(self, days=7):

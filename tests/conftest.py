@@ -8,6 +8,15 @@ from app.models.shop import Shop
 @pytest.fixture(scope='function')
 def app():
     app = create_app('testing')
+
+    # The fixture keeps one app context alive for the whole test, so Flask reuses
+    # it for every request the test makes. Flask-Login caches the resolved user on
+    # `g` — clear it after each request so a second client isn't seen as the first.
+    @app.teardown_request
+    def _clear_cached_login_user(exc):
+        from flask import g
+        g.pop('_login_user', None)
+
     with app.app_context():
         _db.create_all()
         yield app

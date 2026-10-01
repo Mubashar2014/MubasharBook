@@ -1,5 +1,5 @@
 /* =============================================
-   Mubashar's Book — JavaScript v2
+   Mubashar Khata — JavaScript v2
    ============================================= */
 
 // ============ SIDEBAR TOGGLE ============
@@ -85,9 +85,27 @@ document.querySelectorAll('a[href^="#"]').forEach((a) => {
     });
 });
 
+// ============ PARTY WHATSAPP PREFILL (stock in / sell forms) ============
+function initPartyWhatsAppPrefill() {
+    document.querySelectorAll('[data-parties]').forEach((nameField) => {
+        const waField = document.getElementById(nameField.getAttribute('data-wa-field'));
+        if (!waField) return;
+        let parties = {};
+        try { parties = JSON.parse(nameField.getAttribute('data-parties')); } catch (e) { return; }
+
+        const apply = () => {
+            if (waField.dataset.touched === '1') return;
+            waField.value = parties[(nameField.value || '').trim()] || '';
+        };
+        nameField.addEventListener('input', apply);
+        waField.addEventListener('input', () => { waField.dataset.touched = '1'; });
+    });
+}
+
 // ============ INIT ============
 document.addEventListener('DOMContentLoaded', () => {
     initScrollReveal();
     initNavScroll();
+    initPartyWhatsAppPrefill();
     setTimeout(animateCounters, 300);
 });

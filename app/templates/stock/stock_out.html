@@ -1,6 +1,6 @@
 {% extends "app_layout.html" %}
 
-{% block title %}Sell Stock — Mubashar's Book{% endblock %}
+{% block title %}Sell Stock — Mubashar Khata{% endblock %}
 {% block page_title %}Sell: {{ item.model_name }}{% endblock %}
 {% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock / Sell{% endblock %}
 
@@ -48,7 +48,12 @@
             <!-- Customer -->
             <div class="field">
                 <label><i data-lucide="user" style="width:14px;height:14px;"></i> Customer Name <span style="color:var(--cashout);font-size:11px;">required if pending</span></label>
-                {{ form.customer_name(placeholder="Type customer name to track in khata, or leave blank for full cash sale") }}
+                {{ form.customer_name(placeholder="Type customer name to track in khata, or leave blank for full cash sale",
+                                      data_parties=(party_numbers or {})|tojson, data_wa_field="sale_whatsapp") }}
+            </div>
+            <div class="field">
+                <label><i data-lucide="message-circle" style="width:14px;height:14px;"></i> Customer WhatsApp <span style="color:var(--ink-faint);font-size:11px;">optional — receipt is shared to this number</span></label>
+                {{ form.sale_whatsapp(placeholder="e.g. 0300 1234567 — leave blank to skip", inputmode="tel") }}
             </div>
 
             <!-- Payment -->

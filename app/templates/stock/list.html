@@ -1,6 +1,6 @@
 {% extends "app_layout.html" %}
 
-{% block title %}Stock — Mubashar's Book{% endblock %}
+{% block title %}Stock — Mubashar Khata{% endblock %}
 {% block page_title %}Stock{% endblock %}
 {% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock{% endblock %}
 
@@ -149,6 +149,9 @@
                                 <a href="{{ url_for('stock.edit_stock', item_id=item.id) }}" class="btn btn-outline btn-sm" title="Edit phone">
                                     <i data-lucide="pencil" style="width:14px;height:14px;"></i>
                                 </a>
+                                <a href="{{ url_for('stock.receipt', item_id=item.id, type='purchase') }}" class="btn btn-outline btn-sm" title="Purchase receipt — share on WhatsApp or print">
+                                    <i data-lucide="receipt" style="width:14px;height:14px;"></i>
+                                </a>
                                 <form method="POST" action="{{ url_for('stock.delete_stock', item_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Delete this phone completely?\n\nThis removes ALL linked cashbook entries (paid to supplier, purchase expenses) and khata entries (pending amounts), then recalculates every balance.\n\nThis cannot be undone.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-outline btn-sm" style="color:var(--cashout);border-color:var(--cashout);" title="Delete phone and all linked entries">
@@ -161,6 +164,12 @@
                                 <span style="font-size:12px;color:var(--ink-faint);white-space:nowrap;">
                                     {{ item.customer_name or 'Cash' }} — Rs {{ "{:,.0f}".format(item.sale_price|float) }}
                                 </span>
+                                <a href="{{ url_for('stock.receipt', item_id=item.id, type='sale') }}" class="btn btn-outline btn-sm" title="Sale receipt — share on WhatsApp or print">
+                                    <i data-lucide="receipt" style="width:14px;height:14px;"></i>
+                                </a>
+                                <a href="{{ url_for('stock.receipt', item_id=item.id, type='purchase') }}" class="btn btn-outline btn-sm" title="Purchase receipt">
+                                    <i data-lucide="file-text" style="width:14px;height:14px;"></i>
+                                </a>
                                 <form method="POST" action="{{ url_for('stock.unsell_stock', item_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Undo this sale?\n\nThis removes the sale cash entries (money received, sale expense) and any pending receivable from the customer, recalculates balances, and puts the phone back in stock.\n\nThe purchase records are kept.');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-outline btn-sm" title="Un-sell — undo this sale, phone returns to stock">

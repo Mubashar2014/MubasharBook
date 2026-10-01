@@ -1,11 +1,12 @@
 {% extends "app_layout.html" %}
 
-{% block title %}Settings — Mubashar's Book{% endblock %}
-{% block page_title %}Shop Settings{% endblock %}
+{% block title %}Settings — Mubashar Khata{% endblock %}
+{% block page_title %}Settings{% endblock %}
 {% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Settings{% endblock %}
 
 {% block content %}
-<div class="card animate-on-scroll" style="max-width:700px;">
+<!-- ============ Shop ============ -->
+<div class="card animate-on-scroll" id="shop" style="max-width:700px;">
     <div class="card-pad">
         <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
             <i data-lucide="settings" style="width:22px;height:22px;color:var(--ink);"></i>
@@ -38,6 +39,7 @@
         <!-- Shop Details -->
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form" value="shop">
 
             <div class="field">
                 <label><i data-lucide="store" style="width:14px;height:14px;"></i> Shop Name *</label>
@@ -63,6 +65,31 @@
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ============ Profile ============ -->
+<div class="card animate-on-scroll" id="profile" style="max-width:700px;margin-top:24px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="user-round" style="width:22px;height:22px;color:var(--ink);"></i>
+            Profile
+        </h3>
+        {% set profile_action = url_for('main.settings_profile') %}
+        {% include 'settings/_profile_form.html' %}
+    </div>
+</div>
+
+<!-- ============ Security ============ -->
+<div class="card animate-on-scroll" id="password" style="max-width:700px;margin-top:24px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="shield" style="width:22px;height:22px;color:var(--ink);"></i>
+            Security
+        </h3>
+        <p style="font-size:13px;color:var(--ink-faint);margin:-12px 0 20px;">Change the password you use to log in.</p>
+        {% set password_action = url_for('main.settings_password') %}
+        {% include 'settings/_password_form.html' %}
     </div>
 </div>
 {% endblock %}

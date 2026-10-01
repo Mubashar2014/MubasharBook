@@ -1,6 +1,6 @@
 # 📋 Daily Operations Guide
 
-Quick reference for managing Mubashar's Book day-to-day.
+Quick reference for managing Mubashar Khata day-to-day.
 
 ---
 
@@ -303,17 +303,17 @@ Dashboard:        http://localhost:5050/investor/dashboard
 
 ### Verify Payment (WhatsApp/SMS):
 ```
-Hi! I've verified your payment for Mubashar's Book. Your subscription is now active. You can login and start using all features. Let me know if you need any help!
+Hi! I've verified your payment for Mubashar Khata. Your subscription is now active. You can login and start using all features. Let me know if you need any help!
 ```
 
 ### Reject Payment (WhatsApp/SMS):
 ```
-Hi! I checked your payment for Mubashar's Book but [REASON]. Please upload a new screenshot showing [DETAILS]. Thanks!
+Hi! I checked your payment for Mubashar Khata but [REASON]. Please upload a new screenshot showing [DETAILS]. Thanks!
 ```
 
 ### Trial Ending Soon (WhatsApp/SMS):
 ```
-Hi! Your 7-day trial ends soon. To keep using Mubashar's Book, subscribe now: http://localhost:5050/subscription/subscribe
+Hi! Your 7-day trial ends soon. To keep using Mubashar Khata, subscribe now: http://localhost:5050/subscription/subscribe
 
 Plans:
 - Basic: Rs 2,000/month
@@ -392,5 +392,5 @@ Check pending payments + Verify them = Done! ✅
 ---
 
 **Last Updated:** 2026-09-26  
-**System:** Mubashar's Book  
+**System:** Mubashar Khata  
 **Status:** Fully Operational 🚀

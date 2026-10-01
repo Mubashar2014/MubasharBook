@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This design document outlines the architecture and implementation approach for transforming Mubashar's Book from a trial-based system to a full subscription management platform. The system will support optional trials, immediate subscriptions, payment integration, email verification, password reset, and comprehensive admin controls.
+This design document outlines the architecture and implementation approach for transforming Mubashar Khata from a trial-based system to a full subscription management platform. The system will support optional trials, immediate subscriptions, payment integration, email verification, password reset, and comprehensive admin controls.
 
 ### 1.1 Design Goals
 

@@ -31,7 +31,7 @@ The email system is now enabled! Here's how to configure it.
 2. **Create App Password**:
    - Go to https://myaccount.google.com/apppasswords
    - Select "Mail" and "Other (Custom name)"
-   - Name it "Mubashars Book"
+   - Name it "Mubashar Khata"
    - Copy the 16-character password
 
 3. **Update `.env` file**:
@@ -41,7 +41,7 @@ The email system is now enabled! Here's how to configure it.
    MAIL_USE_TLS=True
    MAIL_USERNAME=your-gmail@gmail.com
    MAIL_PASSWORD=your-app-password-here  # 16-char app password
-   MAIL_DEFAULT_SENDER=noreply@yourdomain.com
+   MAIL_DEFAULT_SENDER="Mubashar Khata <noreply@mubasharsbook.com>"
    BASE_URL=http://localhost:5050
    ```
 
@@ -70,7 +70,7 @@ The email system is now enabled! Here's how to configure it.
    MAIL_USE_TLS=True
    MAIL_USERNAME=apikey
    MAIL_PASSWORD=your-sendgrid-api-key-here
-   MAIL_DEFAULT_SENDER=noreply@yourdomain.com
+   MAIL_DEFAULT_SENDER="Mubashar Khata <noreply@mubasharsbook.com>"
    BASE_URL=https://yourdomain.com
    ```
 
@@ -95,7 +95,7 @@ The email system is now enabled! Here's how to configure it.
    MAIL_USE_TLS=True
    MAIL_USERNAME=postmaster@yourdomain.mailgun.org
    MAIL_PASSWORD=your-mailgun-password
-   MAIL_DEFAULT_SENDER=noreply@yourdomain.com
+   MAIL_DEFAULT_SENDER="Mubashar Khata <noreply@mubasharsbook.com>"
    BASE_URL=https://yourdomain.com
    ```
 

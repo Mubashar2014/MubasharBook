@@ -9,10 +9,9 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
-                <i data-lucide="book-open" style="width:20px;height:20px;"></i>
-            </div>
-            <div class="brand-name">Mubashar's Book</div>
+            <a href="{{ url_for('main.dashboard') }}" style="line-height:0;" aria-label="Mubashar Khata — Dashboard">
+                <img class="brand-logo" src="{{ url_for('static', filename='img/logo-dark.png') }}" alt="Mubashar Khata" width="134" height="42" style="height:42px; width:auto; display:block;">
+            </a>
         </div>
         <a class="side-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
             <span class="ic"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span> Dashboard
@@ -32,12 +31,19 @@
         <a class="side-link {% if request.endpoint == 'reports.pnl' %}active{% endif %}" href="{{ url_for('reports.pnl') }}">
             <span class="ic"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></span> Profit &amp; Loss
         </a>
+        <a class="side-link {% if request.endpoint == 'reports.monthly' %}active{% endif %}" href="{{ url_for('reports.monthly') }}">
+            <span class="ic"><i data-lucide="file-text" style="width:18px;height:18px;"></i></span> Monthly Statement
+        </a>
         <div class="side-section-label">Premium</div>
         <a class="side-link {% if request.endpoint and 'shareholders' in request.endpoint %}active{% endif %}" href="{{ url_for('shareholders.setup') }}">
             <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Shareholders <span class="pl-tag">PRO</span>
         </a>
         <a class="side-link" href="{{ url_for('subscription.my_subscription') }}">
             <span class="ic"><i data-lucide="credit-card" style="width:18px;height:18px;"></i></span> My Subscription
+        </a>
+        <div class="side-section-label">Account</div>
+        <a class="side-link {% if request.endpoint and request.endpoint.startswith('main.settings') %}active{% endif %}" href="{{ url_for('main.settings') }}">
+            <span class="ic"><i data-lucide="settings" style="width:18px;height:18px;"></i></span> Settings
         </a>
     </aside>
 

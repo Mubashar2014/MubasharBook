@@ -1,5 +1,5 @@
 /* =============================================
-   MUBASHAR'S BOOK — Design System v2
+   MUBASHAR KHATA — Design System v2
    Overrides Bootstrap completely
    ============================================= */
 
@@ -921,11 +921,57 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 
 /* Print styles */
 @media print {
-    .sidebar, .topbar, .quick-row, .btn, .sidebar-toggle, .sidebar-overlay {
+    .sidebar, .topbar, .quick-row, .btn, .sidebar-toggle, .sidebar-overlay,
+    .no-print, .flash-messages, .filter-chips, .chip {
         display: none !important;
     }
     .content { padding: 0; }
     .card { box-shadow: none; border: 1px solid #000; }
+    .stat-card { box-shadow: none; border: 1px solid #999; }
     .app-shell { display: block; }
     .app-main { min-height: auto; }
+    body { background: #fff; }
+}
+
+/* Auth flash messages — auth pages define .auth-alert locally, these give
+   the flash categories their colours everywhere. */
+.auth-alert.flash-success { background: #F0F9F4; color: #1B5E3A; border: 1px solid #D1EBD8; }
+.auth-alert.flash-warning { background: #FEF8E8; color: #8A6A1E; border: 1px solid #F5E4B8; }
+.auth-alert.flash-info    { background: #EFF6FF; color: #1E4D8C; border: 1px solid #D1E6F9; }
+.auth-alert.flash-danger  { background: #FDF0EE; color: #A13D2E; border: 1px solid #F5D6D4; }
+
+/* Khata party cards (whole card is a link, WhatsApp button on top) */
+.party-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    transition: all 0.15s ease;
+}
+.party-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.party-amount { text-align: right; margin-left: auto; flex-shrink: 0; }
+.party-act { position: relative; z-index: 2; white-space: nowrap; flex-shrink: 0; }
+.party-open { position: absolute; inset: 0; z-index: 1; border-radius: var(--radius); }
+@media (max-width: 560px) {
+    .party-row { flex-wrap: wrap; }
+    .party-who { flex: 1 1 100%; }
+    .party-amount { text-align: left; margin-left: 0; }
+    .party-act { margin-left: auto; }
+}
+
+/* Khata party header — stacks on narrow screens */
+.party-head { display: flex; align-items: center; gap: 16px; }
+.party-title { flex: 1; min-width: 0; }
+.party-total { text-align: right; flex-shrink: 0; }
+.party-remind { flex-shrink: 0; }
+@media (max-width: 640px) {
+    .party-head { flex-wrap: wrap; }
+    .party-title { flex: 1 1 calc(100% - 72px); }
+    .party-total { text-align: left; }
+    .party-remind { margin-left: auto; }
 }

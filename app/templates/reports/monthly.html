@@ -1,0 +1,309 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Monthly Statement — Mubashar Khata{% endblock %}
+{% block page_title %}Monthly Statement{% endblock %}
+{% block page_path %}{{ shop.name }} / Reports / {{ month_label }}{% endblock %}
+
+{% block content %}
+<style>
+    .stmt-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .statement {
+        background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(28,27,25,0.1); max-width: 860px; overflow: hidden; color: #1C1B19;
+        font-family: 'Inter', sans-serif;
+    }
+    .stmt-head { background: #2E5941; color: #FFFDF6; padding: 22px 26px; display: flex; justify-content: space-between; gap: 18px; align-items: center; flex-wrap: wrap; }
+    .stmt-shop { font-family: 'Fraunces', Georgia, serif; font-size: 25px; font-weight: 600; line-height: 1.1; }
+    .stmt-sub { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+    .stmt-title { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); padding: 8px 12px; border-radius: 8px; white-space: nowrap; }
+    .stmt-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 14px 26px; font-size: 12px; color: #5A5748; background: #F7F3E8; border-bottom: 1px solid #DDD4B8; }
+    .stmt-meta b { color: #1C1B19; }
+    .stmt-body { padding: 24px 26px 28px; }
+    .stmt-sec { margin-bottom: 26px; }
+    .stmt-sec:last-child { margin-bottom: 0; }
+    .stmt-h {
+        font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-weight: 600;
+        margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #2E5941; color: #234A34;
+        display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    }
+    .stmt-h span { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: #8A8578; letter-spacing: 0.06em; text-transform: uppercase; }
+    .kv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .kv { background: #F7F3E8; border: 1px solid #DDD4B8; border-radius: 10px; padding: 12px 14px; }
+    .kv .k { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #8A8578; font-weight: 700; }
+    .kv .v { font-family: 'Fraunces', Georgia, serif; font-size: 21px; font-weight: 700; margin-top: 4px; }
+    .kv .n { font-size: 11px; color: #5A5748; margin-top: 2px; }
+    .pos { color: #2E5941; }
+    .neg { color: #A13D2E; }
+    .stmt-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .stmt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .stmt-table th {
+        text-align: left; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+        color: #8A8578; padding: 7px 8px; border-bottom: 1px solid #DDD4B8;
+    }
+    .stmt-table td { padding: 8px; border-bottom: 1px solid #F0ECE0; }
+    .stmt-table th.r, .stmt-table td.r { text-align: right; }
+    .stmt-table tr.sum td { font-weight: 700; border-top: 2px solid #2E5941; border-bottom: none; }
+    .stmt-table tr.headline td { font-weight: 700; font-size: 15px; background: #EDF5F0; }
+    .stmt-note { font-size: 11.5px; color: #8A8578; margin-top: 8px; }
+    .stmt-foot { margin-top: 24px; padding-top: 16px; border-top: 1px dashed #DDD4B8; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 11px; color: #8A8578; }
+    .stmt-sign { text-align: center; min-width: 170px; padding-top: 26px; color: #5A5748; font-size: 11px; }
+    .stmt-sign .line { border-top: 1px solid #5A5748; margin-bottom: 5px; }
+    .empty { text-align: center; color: #8A8578; font-size: 13px; padding: 18px 0; }
+    @media (max-width: 700px) {
+        .kv-grid { grid-template-columns: repeat(2, 1fr); }
+        .stmt-body { padding: 18px 14px 22px; }
+        .stmt-head, .stmt-meta { padding-left: 14px; padding-right: 14px; }
+        .stmt-table { font-size: 12.5px; }
+        .stmt-table th, .stmt-table td { padding: 6px; }
+        .kv { padding: 10px 11px; }
+        .kv .v { font-size: 18px; }
+    }
+    @media print {
+        .statement { box-shadow: none; border: none; border-radius: 0; max-width: 100%; }
+        .stmt-head { background: #2E5941 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .kv, .stmt-table tr.headline td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .stmt-sec { break-inside: avoid; }
+        .stmt-scroll { overflow: visible; }
+    }
+</style>
+
+<div class="stmt-actions no-print">
+    <div class="filter-chips">
+        <a class="chip" href="{{ url_for('reports.monthly', year=prev_year, month=prev_month) }}">&#8249; Prev</a>
+        <span class="chip active">{{ month_label }}</span>
+        <a class="chip" href="{{ url_for('reports.monthly', year=next_year, month=next_month) }}">Next &#8250;</a>
+        {% if year == today.year and month == today.month %}
+        {% else %}
+        <a class="chip" href="{{ url_for('reports.monthly') }}">This month</a>
+        {% endif %}
+    </div>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i> Print / Save as PDF
+    </button>
+    <a href="{{ url_for('reports.pnl', view='month', year=year, month=month) }}" class="btn btn-outline">
+        <i data-lucide="bar-chart-2" style="width:16px;height:16px;"></i> P&amp;L detail
+    </a>
+</div>
+
+<div class="statement animate-on-scroll" id="statement">
+    <div class="stmt-head">
+        <div>
+            <div class="stmt-shop">{{ shop.name }}</div>
+            <div class="stmt-sub">{{ current_user.owner_name }} · {{ current_user.phone }}</div>
+        </div>
+        <div class="stmt-title">Monthly Statement</div>
+    </div>
+
+    <div class="stmt-meta">
+        <span>Period: <b>{{ period_start.strftime('%d %b %Y') }} — {{ period_end.strftime('%d %b %Y') }}</b></span>
+        <span>Issued: <b>{{ today.strftime('%d %b %Y') }}</b></span>
+        <span>Statement: <b>{{ period_start.strftime('%Y%m') }}-{{ '%04d'|format(current_user.id) }}</b></span>
+    </div>
+
+    <div class="stmt-body">
+        <!-- Cash -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Cash Position <span>{{ cash_count }} transaction{{ 's' if cash_count != 1 }} in period</span></div>
+            <div class="kv-grid">
+                <div class="kv">
+                    <div class="k">Opening</div>
+                    <div class="v">Rs {{ "{:,.0f}".format(opening) }}</div>
+                    <div class="n">Balance at {{ period_start.strftime('%d %b') }}</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Cash In</div>
+                    <div class="v pos">Rs {{ "{:,.0f}".format(cash_in) }}</div>
+                    <div class="n">Money received</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Cash Out</div>
+                    <div class="v neg">Rs {{ "{:,.0f}".format(cash_out) }}</div>
+                    <div class="n">Money paid</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Closing</div>
+                    <div class="v {% if closing >= 0 %}pos{% else %}neg{% endif %}">Rs {{ "{:,.0f}".format(closing) }}</div>
+                    <div class="n">Balance at {{ period_end.strftime('%d %b') }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit & Loss -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Profit &amp; Loss <span>{{ month_label }}</span></div>
+            <div class="stmt-scroll"><table class="stmt-table">
+                <tbody>
+                    <tr>
+                        <td>Revenue — phones sold ({{ sold_qty }} unit{{ 's' if sold_qty != 1 }})</td>
+                        <td class="r pos">Rs {{ "{:,.0f}".format(pnl.revenue) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Cost of phones sold</td>
+                        <td class="r neg">(Rs {{ "{:,.0f}".format(pnl.cost) }})</td>
+                    </tr>
+                    <tr class="sum">
+                        <td>Gross Profit</td>
+                        <td class="r {% if pnl.gross >= 0 %}pos{% else %}neg{% endif %}">Rs {{ "{:,.0f}".format(pnl.gross) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Shop &amp; operating expenses</td>
+                        <td class="r neg">(Rs {{ "{:,.0f}".format(pnl.expenses) }})</td>
+                    </tr>
+                    <tr class="headline">
+                        <td>Net Profit</td>
+                        <td class="r {% if pnl.net >= 0 %}pos{% else %}neg{% endif %}">Rs {{ "{:,.0f}".format(pnl.net) }}</td>
+                    </tr>
+                </tbody>
+            </table></div>
+            <div class="stmt-note">
+                Of this profit: Rs {{ "{:,.0f}".format(pnl.received) }} received in cash ·
+                Rs {{ "{:,.0f}".format(pnl.pending) }} still pending in khata.
+            </div>
+        </div>
+
+        <!-- Stock -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Stock Movement <span>phones</span></div>
+            <div class="stmt-scroll"><table class="stmt-table">
+                <thead>
+                    <tr>
+                        <th>Movement</th>
+                        <th class="r">Items</th>
+                        <th class="r">Units</th>
+                        <th class="r">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Purchased in {{ month_label }}</td>
+                        <td class="r">{{ bought_count }}</td>
+                        <td class="r">{{ bought_qty }}</td>
+                        <td class="r">Rs {{ "{:,.0f}".format(bought_value) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Sold in {{ month_label }}</td>
+                        <td class="r">{{ pnl.sold_items|length }}</td>
+                        <td class="r">{{ sold_qty }}</td>
+                        <td class="r">Rs {{ "{:,.0f}".format(pnl.revenue) }}</td>
+                    </tr>
+                    <tr class="sum">
+                        <td>In stock today</td>
+                        <td class="r">{{ in_stock_count }}</td>
+                        <td class="r">{{ in_stock_units }}</td>
+                        <td class="r">Rs {{ "{:,.0f}".format(stock_value) }}</td>
+                    </tr>
+                </tbody>
+            </table></div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Expenses by Category <span>{{ month_label }}</span></div>
+            {% if expense_breakdown %}
+            <div class="stmt-scroll"><table class="stmt-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="r">Amount</th>
+                        <th class="r">Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in expense_breakdown %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td class="r">Rs {{ "{:,.0f}".format(row.total) }}</td>
+                        <td class="r">{{ "%.0f"|format(row.total * 100 / pnl.expenses) if pnl.expenses else 0 }}%</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="sum">
+                        <td>Total expenses</td>
+                        <td class="r">Rs {{ "{:,.0f}".format(pnl.expenses) }}</td>
+                        <td class="r">100%</td>
+                    </tr>
+                </tbody>
+            </table></div>
+            {% else %}
+            <div class="empty">No expenses recorded in this period.</div>
+            {% endif %}
+        </div>
+
+        <!-- Khata -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Khata <span>pending balances today</span></div>
+            <div class="kv-grid">
+                <div class="kv">
+                    <div class="k">Receivable</div>
+                    <div class="v pos">Rs {{ "{:,.0f}".format(receivable_pending) }}</div>
+                    <div class="n">Customers owe us</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Payable</div>
+                    <div class="v neg">Rs {{ "{:,.0f}".format(payable_pending) }}</div>
+                    <div class="n">We owe suppliers</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Opened this month</div>
+                    <div class="v">{{ khata_opened_count }}</div>
+                    <div class="n">New khata entries</div>
+                </div>
+                <div class="kv">
+                    <div class="k">Value opened</div>
+                    <div class="v">Rs {{ "{:,.0f}".format(khata_opened_amount) }}</div>
+                    <div class="n">Amount added to khata</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales list -->
+        <div class="stmt-sec">
+            <div class="stmt-h">Phones Sold <span>{{ pnl.sold_items|length }} sale{{ 's' if pnl.sold_items|length != 1 }}</span></div>
+            {% if pnl.sold_items %}
+            <div class="stmt-scroll"><table class="stmt-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Phone</th>
+                        <th class="r">Qty</th>
+                        <th class="r">Sale</th>
+                        <th class="r">Received</th>
+                        <th class="r">Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pnl.sold_items[:40] %}
+                    <tr>
+                        <td style="white-space:nowrap;">{{ item.sale_date.strftime('%d %b') if item.sale_date else '—' }}</td>
+                        <td>{{ item.model_name }}{% if item.customer_name %} <span style="color:#8A8578;">— {{ item.customer_name }}</span>{% endif %}</td>
+                        <td class="r">{{ item.quantity }}</td>
+                        <td class="r">Rs {{ "{:,.0f}".format((item.sale_price or 0)|float * item.quantity) }}</td>
+                        <td class="r pos">Rs {{ "{:,.0f}".format(item.sale_received or 0) }}</td>
+                        <td class="r {% if (item.sale_pending or 0)|float > 0 %}neg{% endif %}">Rs {{ "{:,.0f}".format(item.sale_pending or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if pnl.sold_items|length > 40 %}
+                    <tr>
+                        <td colspan="6" class="stmt-note">…and {{ pnl.sold_items|length - 40 }} more sales — see the P&amp;L detail.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table></div>
+            {% else %}
+            <div class="empty">No phones sold in this period.</div>
+            {% endif %}
+        </div>
+
+        <div class="stmt-foot">
+            <div>
+                <img src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="108" height="34" style="height:34px; width:auto; display:block; margin-bottom:8px;">
+                <div>Prepared from Mubashar Khata records on {{ today.strftime('%d %b %Y') }}.</div>
+                <div style="margin-top:4px;">Cash figures are cashbook balances; khata shows amounts still pending.</div>
+            </div>
+            <div class="stmt-sign">
+                <div class="line"></div>
+                Authorised Signatory
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

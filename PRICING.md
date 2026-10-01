@@ -1,4 +1,4 @@
-# 💰 Mubashar's Book Pricing
+# 💰 Mubashar Khata Pricing
 
 ## Plans & Pricing (PKR)
 
@@ -245,7 +245,7 @@ calculate_savings(plan)
 ## Contact
 
 **Questions about pricing?**
-- Email: support@mubasharsbook.com
+- Email: support@mubasharkhata.com
 - WhatsApp: [Coming soon]
 - Reply to any automated email
 

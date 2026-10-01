@@ -1,7 +1,7 @@
 # Subscription Management System - Requirements
 
 ## Overview
-Transform Mubashar's Book from a trial-based system to a full subscription management platform with payment integration, email verification, password reset, and admin panel capabilities.
+Transform Mubashar Khata from a trial-based system to a full subscription management platform with payment integration, email verification, password reset, and admin panel capabilities.
 
 ## Business Goals
 1. Enable users to subscribe directly without mandatory trial period

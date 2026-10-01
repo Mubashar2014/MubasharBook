@@ -17,6 +17,7 @@ class StockItem(db.Model):
     # Purchase (stock in)
     cost_price = db.Column(db.Numeric(12, 2), nullable=False)
     supplier_name = db.Column(db.String(200), nullable=True)
+    purchase_whatsapp = db.Column(db.String(20), nullable=True)  # digits, for sending the receipt
     purchase_date = db.Column(db.Date, nullable=False)
     purchase_paid = db.Column(db.Numeric(12, 2), default=0)
     purchase_pending = db.Column(db.Numeric(12, 2), default=0)
@@ -27,6 +28,7 @@ class StockItem(db.Model):
     status = db.Column(db.String(10), default='in_stock')
     sale_price = db.Column(db.Numeric(12, 2), nullable=True)
     customer_name = db.Column(db.String(200), nullable=True)
+    sale_whatsapp = db.Column(db.String(20), nullable=True)  # digits, for sending the receipt
     sale_date = db.Column(db.Date, nullable=True)
     sale_received = db.Column(db.Numeric(12, 2), default=0)
     sale_pending = db.Column(db.Numeric(12, 2), default=0)

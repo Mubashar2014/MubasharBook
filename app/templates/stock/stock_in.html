@@ -1,6 +1,6 @@
 {% extends "app_layout.html" %}
 
-{% block title %}Add Stock — Mubashar's Book{% endblock %}
+{% block title %}Add Stock — Mubashar Khata{% endblock %}
 {% block page_title %}{{ 'Edit Stock' if action == 'Edit' else 'Add Stock (Buy)' }}{% endblock %}
 {% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Stock / {{ 'Edit' if action == 'Edit' else 'Buy' }}{% endblock %}
 
@@ -45,7 +45,12 @@
             <!-- Supplier -->
             <div class="field">
                 <label><i data-lucide="truck" style="width:14px;height:14px;"></i> Supplier Name <span style="color:var(--cashout);font-size:11px;">required if pending</span></label>
-                {{ form.supplier_name(placeholder="Type supplier name to track in khata, or leave blank for full cash purchase") }}
+                {{ form.supplier_name(placeholder="Type supplier name to track in khata, or leave blank for full cash purchase",
+                                      data_parties=(party_numbers or {})|tojson, data_wa_field="purchase_whatsapp") }}
+            </div>
+            <div class="field">
+                <label><i data-lucide="message-circle" style="width:14px;height:14px;"></i> Supplier WhatsApp <span style="color:var(--ink-faint);font-size:11px;">optional — receipt is shared to this number</span></label>
+                {{ form.purchase_whatsapp(placeholder="e.g. 0300 1234567 — leave blank to skip", inputmode="tel") }}
             </div>
 
             <!-- Funding -->

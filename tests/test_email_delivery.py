@@ -110,3 +110,59 @@ def test_admin_test_email_reports_success(app, test_user):
     log = EmailLog.query.order_by(EmailLog.id.desc()).first()
     assert log.status == 'sent'
     assert log.error_message is None
+
+
+# ── failure paths: the log write must never take the request down ──
+
+
+def test_smtp_failure_marks_log_failed(app, test_user, monkeypatch):
+    from app.extensions import mail
+    from app.utils.email import send_verification_email
+
+    def _boom(msg):
+        raise ConnectionResetError(104, 'Connection reset by peer')
+
+    monkeypatch.setattr(mail, 'send', _boom)
+
+    with app.app_context():
+        assert send_verification_email(test_user) is False
+
+    log = EmailLog.query.order_by(EmailLog.id.desc()).first()
+    assert log.status == 'failed'
+    assert 'Connection reset' in log.error_message
+    assert log.failed_at is not None
+
+
+def test_stale_connection_on_log_write_does_not_break_send(app, test_user, monkeypatch):
+    """Live bug: MySQL dropped the pooled connection during the SMTP send, then
+    the 'mark as sent' SELECT raised 2006 and the error handler raised again —
+    so a delivered email produced a 500 page."""
+    from sqlalchemy.exc import OperationalError
+
+    from app.utils.email import send_verification_email
+
+    class _DeadConnection:
+        def filter_by(self, **kwargs):
+            raise OperationalError('SELECT', {}, Exception('MySQL server has gone away'))
+
+    monkeypatch.setattr(EmailLog, 'query', _DeadConnection())
+
+    with app.app_context():
+        # Must not raise, and the send itself still counts as delivered.
+        assert send_verification_email(test_user) is True
+
+
+def test_missing_template_marks_log_failed(app, test_user):
+    from app.utils.email import send_email
+
+    with app.app_context():
+        assert send_email(
+            to=test_user.email,
+            subject='Broken',
+            template='does_not_exist',
+            email_type='verification',
+        ) is False
+
+    log = EmailLog.query.order_by(EmailLog.id.desc()).first()
+    assert log.status == 'failed'
+    assert 'does_not_exist' in log.error_message

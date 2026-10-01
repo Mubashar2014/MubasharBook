@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Log in — Mubashar's Book{% endblock %}
+{% block title %}Log in — Mubashar Khata{% endblock %}
 
 {% block body %}
 <div class="auth-page">
@@ -7,10 +7,7 @@
         <div class="auth-visual">
             <div class="auth-visual-content">
                 <div class="auth-brand">
-                    <div class="brand-mark" style="background:var(--gold); color:var(--ink);">
-                        <i data-lucide="book-open" style="width:22px;height:22px;"></i>
-                    </div>
-                    <span style="font-family:var(--font-serif); font-weight:700; font-size:22px; color:#fff;">Mubashar's Book</span>
+                    <img src="{{ url_for('static', filename='img/logo-dark.png') }}" alt="Mubashar Khata" width="178" height="56" style="display:block; height:56px; width:auto;">
                 </div>
                 <h2>Apni dukan ka poora hisaab</h2>
                 <p>Stock, cashbook, kharche aur profit — sab kuch ek jagah. Aur agar investor hai, to munafay ki taqseem bhi Shariah ke mutabiq.</p>
@@ -23,6 +20,7 @@
         </div>
         <div class="auth-form-side">
             <div class="auth-form-card">
+            <img class="auth-logo-mobile" src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="146" height="46" style="">
                 <h1>Welcome back</h1>
                 <p class="auth-subtitle">Sign in to continue to your dashboard</p>
 
@@ -51,6 +49,9 @@
                                 <i data-lucide="eye-off" class="eye-closed" style="width:18px;height:18px;display:none;"></i>
                             </button>
                         </div>
+                    </div>
+                    <div style="text-align:right;margin:-6px 0 14px;">
+                        <a href="{{ url_for('auth.forgot_password') }}" style="font-size:13px;color:var(--ink-faint);">Forgot password?</a>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">
                         <i data-lucide="log-in" style="width:18px;height:18px;"></i> Log in
@@ -167,5 +168,8 @@ function togglePassword(inputId, button) {
     .auth-form-card h1 { font-size: 24px; }
     .auth-form-side { padding: 16px; }
 }
+
+.auth-logo-mobile { display: none; height: 46px; width: auto; margin: 0 0 18px; }
+@media (max-width: 991.98px) { .auth-logo-mobile { display: block; } }
 </style>
 {% endblock %}

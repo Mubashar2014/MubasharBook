@@ -1,0 +1,38 @@
+{% extends "admin_layout.html" %}
+{% block title %}My Account — Admin{% endblock %}
+{% block page_title %}My Account{% endblock %}
+{% block page_path %}Admin / Account{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">My Account</h1>
+        <p style="color: var(--ink-faint);">Your own profile and password — separate from the accounts you manage.</p>
+    </div>
+
+    <!-- Profile -->
+    <div class="card" id="profile" style="margin-bottom: 24px;">
+        <div class="card-pad">
+            <h3 style="font-family: var(--font-serif); margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="user-round" style="width: 22px; height: 22px; color: var(--ink);"></i>
+                Profile
+            </h3>
+            {% set profile_action = url_for('admin.account') %}
+            {% include 'settings/_profile_form.html' %}
+        </div>
+    </div>
+
+    <!-- Security -->
+    <div class="card" id="password" style="margin-bottom: 24px;">
+        <div class="card-pad">
+            <h3 style="font-family: var(--font-serif); margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="shield" style="width: 22px; height: 22px; color: var(--ink);"></i>
+                Security
+            </h3>
+            <p style="font-size: 13px; color: var(--ink-faint); margin: -12px 0 20px;">Change the password you use to log in to the admin panel.</p>
+            {% set password_action = url_for('admin.account') %}
+            {% include 'settings/_password_form.html' %}
+        </div>
+    </div>
+</div>
+{% endblock %}

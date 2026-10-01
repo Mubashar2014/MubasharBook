@@ -1,6 +1,6 @@
 {% extends "app_layout.html" %}
 
-{% block title %}{{ party_name }} — Khata — Mubashar's Book{% endblock %}
+{% block title %}{{ party_name }} — Khata — Mubashar Khata{% endblock %}
 {% block page_title %}{{ party_name }}{% endblock %}
 {% block page_path %}{{ current_user.shop.name if current_user.shop else 'My Shop' }} / Khata / {{ party_name }}{% endblock %}
 
@@ -15,22 +15,27 @@
 {% block content %}
 <!-- Party Header -->
 <div class="card animate-on-scroll" style="margin-bottom:20px;">
-    <div class="card-pad" style="display:flex;align-items:center;gap:16px;">
-        <div style="width:56px;height:56px;border-radius:50%;{% if entry_type == 'receivable' %}background:var(--ledger-tint);color:var(--ledger);{% else %}background:var(--cashout-tint);color:var(--cashout);{% endif %}display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-weight:700;font-size:22px;">
+    <div class="card-pad party-head">
+        <div style="width:56px;height:56px;border-radius:50%;{% if entry_type == 'receivable' %}background:var(--ledger-tint);color:var(--ledger);{% else %}background:var(--cashout-tint);color:var(--cashout);{% endif %}display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-weight:700;font-size:22px;flex-shrink:0;">
             {{ party_name[0] | upper }}
         </div>
-        <div style="flex:1;">
+        <div class="party-title">
             <div style="font-family:var(--font-serif);font-size:22px;font-weight:600;">{{ party_name }}</div>
             <div style="font-size:13px;color:var(--ink-faint);margin-top:2px;">
                 {% if entry_type == 'receivable' %}Customer — owes us money{% else %}Supplier — we owe them money{% endif %}
             </div>
         </div>
-        <div style="text-align:right;">
+        <div class="party-total">
             <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Pending</div>
             <div style="font-family:var(--font-serif);font-size:28px;font-weight:700;{% if entry_type == 'receivable' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
                 Rs {{ "{:,.0f}".format(total_pending) }}
             </div>
         </div>
+        {% if wa_link %}
+        <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn btn-gold party-remind" title="Open WhatsApp with a ready reminder message">
+            <i data-lucide="message-circle" style="width:16px;height:16px;"></i> Send reminder
+        </a>
+        {% endif %}
     </div>
 </div>
 

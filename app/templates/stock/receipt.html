@@ -1,0 +1,184 @@
+{% extends "app_layout.html" %}
+
+{% block title %}{{ side_label }} — Mubashar Khata{% endblock %}
+{% block page_title %}{{ side_label }}{% endblock %}
+{% block page_path %}{{ shop.name }} / Stock / Receipt{% endblock %}
+
+{% block content %}
+<style>
+    .receipt-card {
+        background: #FFFDF6;
+        border: 1px solid #DDD4B8;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(28,27,25,0.1);
+        max-width: 640px;
+        overflow: hidden;
+        color: #1C1B19;
+        font-family: 'Inter', sans-serif;
+    }
+    .receipt-head {
+        background: #2E5941;
+        color: #FFFDF6;
+        padding: 20px 26px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+    .receipt-shop { font-family: 'Fraunces', Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.1; }
+    .receipt-owner { font-size: 12px; opacity: 0.8; margin-top: 3px; }
+    .receipt-type {
+        font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+        background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35);
+        padding: 7px 12px; border-radius: 8px; white-space: nowrap;
+    }
+    .receipt-body { padding: 22px 26px 26px; }
+    .receipt-meta {
+        display: flex; flex-wrap: wrap; gap: 8px 22px;
+        font-size: 12px; color: #5A5748; padding-bottom: 14px; margin-bottom: 16px;
+        border-bottom: 1px dashed #DDD4B8;
+    }
+    .receipt-meta b { color: #1C1B19; font-weight: 700; }
+    .receipt-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .receipt-table td { padding: 9px 4px; border-bottom: 1px solid #F0ECE0; vertical-align: top; }
+    .receipt-table td.k { color: #5A5748; width: 42%; }
+    .receipt-table td.v { text-align: right; font-weight: 600; word-break: break-word; }
+    .receipt-table tr.total td { border-top: 2px solid #2E5941; border-bottom: none; padding-top: 12px; font-size: 16px; }
+    .receipt-table tr.paid td.v { color: #2E5941; }
+    .receipt-table tr.pend td.v { color: #A13D2E; }
+    .receipt-party {
+        margin-top: 18px; background: #F7F3E8; border: 1px solid #DDD4B8; border-radius: 10px;
+        padding: 14px 16px; font-size: 13px;
+    }
+    .receipt-party .lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8A8578; }
+    .receipt-party .nm { font-size: 15px; font-weight: 700; margin-top: 3px; }
+    .receipt-party .wa { color: #2E5941; font-weight: 600; }
+    .receipt-stamp {
+        margin-top: 16px; text-align: center; font-weight: 800; letter-spacing: 0.18em;
+        color: #2E5941; border: 2px solid #2E5941; border-radius: 10px; padding: 10px;
+        text-transform: uppercase; font-size: 14px;
+    }
+    .receipt-foot {
+        margin-top: 20px; padding-top: 14px; border-top: 1px dashed #DDD4B8;
+        display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        font-size: 11px; color: #8A8578;
+    }
+    .receipt-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; max-width: 640px; }
+    .receipt-status { font-size: 13px; color: #5A5748; min-height: 20px; max-width: 640px; }
+    @media (max-width: 600px) {
+        .receipt-head { flex-direction: column; align-items: flex-start; }
+        .receipt-shop { font-size: 21px; }
+    }
+    @media print {
+        .receipt-card { box-shadow: none; border: none; border-radius: 0; max-width: 100%; }
+        .receipt-head { background: #2E5941 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .receipt-party, .receipt-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+
+<div class="receipt-actions no-print">
+    <button type="button" class="btn btn-gold btn-lg" id="share-receipt"
+            data-wa="{{ wa_link or '' }}" data-filename="{{ rtype }}-receipt-{{ item.id }}.png">
+        <i data-lucide="share-2" style="width:18px;height:18px;"></i>
+        Share on WhatsApp
+    </button>
+    <button type="button" class="btn btn-outline btn-lg" onclick="window.print()">
+        <i data-lucide="printer" style="width:18px;height:18px;"></i> Print / Save as PDF
+    </button>
+    <a href="{{ url_for('stock.stock_out', item_id=item.id) if is_purchase and item.status != 'sold' else url_for('stock.list_stock') }}"
+       class="btn btn-outline btn-lg">
+        <i data-lucide="{{ 'shopping-cart' if is_purchase and item.status != 'sold' else 'list' }}" style="width:18px;height:18px;"></i>
+        {{ 'Sell this phone' if is_purchase and item.status != 'sold' else 'Back to stock' }}
+    </a>
+</div>
+<div class="receipt-status no-print" id="share-status" aria-live="polite"></div>
+
+<div class="receipt-card animate-on-scroll" id="receipt-card">
+    <div class="receipt-head">
+        <div>
+            <div class="receipt-shop">{{ shop.name }}</div>
+            <div class="receipt-owner">
+                {{ current_user.owner_name }} · {{ current_user.phone }}
+            </div>
+        </div>
+        <div class="receipt-type">{{ side_label }}</div>
+    </div>
+
+    <div class="receipt-body">
+        <div class="receipt-meta">
+            <span>Receipt No: <b>{{ rtype|first|upper }}-{{ '%06d'|format(item.id) }}</b></span>
+            <span>Date: <b>{{ (item.sale_date if not is_purchase and item.sale_date else item.purchase_date).strftime('%d %b %Y') }}</b></span>
+            <span>Issued: <b>{{ now.strftime('%d %b %Y %H:%M') }}</b></span>
+            {% if settled and entry and entry.settled_date %}
+            <span>Settled on: <b>{{ entry.settled_date.strftime('%d %b %Y') }}</b></span>
+            {% endif %}
+        </div>
+
+        <table class="receipt-table">
+            <tr>
+                <td class="k">Phone model</td>
+                <td class="v">{{ item.model_name }}</td>
+            </tr>
+            {% if item.imei %}
+            <tr>
+                <td class="k">IMEI / Serial</td>
+                <td class="v" style="font-family:monospace;letter-spacing:0.04em;">{{ item.imei }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="k">Quantity</td>
+                <td class="v">{{ item.quantity }}</td>
+            </tr>
+            <tr>
+                <td class="k">{{ 'Cost price per unit' if is_purchase else 'Selling price per unit' }}</td>
+                <td class="v">Rs {{ "{:,.0f}".format(unit_price) }}</td>
+            </tr>
+            <tr class="total">
+                <td class="k">Total {{ 'purchase' if is_purchase else 'sale' }} amount</td>
+                <td class="v">Rs {{ "{:,.0f}".format(total) }}</td>
+            </tr>
+            <tr class="paid">
+                <td class="k">{{ 'Paid now' if is_purchase else 'Received now' }}</td>
+                <td class="v">Rs {{ "{:,.0f}".format(paid) }}</td>
+            </tr>
+            {% if pending > 0 %}
+            <tr class="pend">
+                <td class="k">{{ 'Pending to supplier' if is_purchase else 'Pending from customer' }}</td>
+                <td class="v">Rs {{ "{:,.0f}".format(pending) }}</td>
+            </tr>
+            {% endif %}
+            {% if entry and entry.status == 'settled' %}
+            <tr class="paid">
+                <td class="k">Settled on {{ entry.settled_date.strftime('%d %b %Y') if entry.settled_date else '' }}</td>
+                <td class="v">Rs {{ "{:,.0f}".format(entry.settled_amount or 0) }}</td>
+            </tr>
+            {% endif %}
+        </table>
+
+        <div class="receipt-party">
+            <div class="lbl">{{ party_label }}</div>
+            <div class="nm">{{ party_name or '—' }}</div>
+            {% if party_number %}
+            <div class="wa"><i data-lucide="message-circle" style="width:13px;height:13px;vertical-align:-2px;"></i> WhatsApp: {{ party_number }}</div>
+            {% endif %}
+            {% if funder_name %}
+            <div style="margin-top:6px;font-size:12px;color:#5A5748;">Funded by: {{ funder_name }}</div>
+            {% endif %}
+        </div>
+
+        {% if entry and entry.status == 'settled' %}
+        <div class="receipt-stamp">{{ 'Settled in full' if not is_purchase else 'Paid in full' }}</div>
+        {% elif pending <= 0 %}
+        <div class="receipt-stamp">{{ 'Paid in full' if is_purchase else 'Received in full' }}</div>
+        {% endif %}
+
+        <div class="receipt-foot">
+            <span>Thank you — goods once sold are covered by shop policy.</span>
+            <span style="display:flex; align-items:center; gap:7px;">Generated by <img src="{{ url_for('static', filename='img/logo-light.png') }}" alt="Mubashar Khata" width="70" height="22" style="height:22px; width:auto; display:block;"></span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="{{ url_for('static', filename='js/receipt.js') }}"></script>
+{% endblock %}

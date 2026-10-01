@@ -1,6 +1,7 @@
 import os
 import uuid
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth_bp
@@ -25,6 +26,17 @@ def _save_shop_image(file_storage, shop_id):
     return f'uploads/{fname}'
 
 
+def _existing_account(phone, email):
+    """Return an account already using this phone or email, if any."""
+    if phone:
+        found = User.query.filter_by(phone=phone).first()
+        if found:
+            return found
+    if email:
+        return User.query.filter_by(email=email).first()
+    return None
+
+
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
@@ -32,54 +44,67 @@ def signup():
 
     form = SignupForm()
     if form.validate_on_submit():
-        existing = User.query.filter_by(phone=form.phone.data.strip()).first()
+        phone = (form.phone.data or '').strip()
+        email = form.email.data.strip().lower()
+
+        existing = _existing_account(phone, email)
         if existing:
-            flash('This phone number is already registered. Please log in.', 'warning')
+            if phone and existing.phone == phone:
+                flash('This phone number is already registered. Please log in.', 'warning')
+            else:
+                flash('This email is already registered. Please log in or use a different email.', 'warning')
             return redirect(url_for('auth.login'))
 
-        existing_email = User.query.filter_by(email=form.email.data.strip().lower()).first()
-        if existing_email:
-            flash('This email is already registered. Please log in or use a different email.', 'warning')
+        try:
+            user = User(
+                owner_name=form.owner_name.data.strip(),
+                phone=phone,
+                email=email,
+                language=form.language.data,
+            )
+            user.set_password(form.password.data)
+            user.generate_verification_token()
+            db.session.add(user)
+            db.session.flush()
+
+            shop_name = form.shop_name.data.strip() if form.shop_name.data and form.shop_name.data.strip() else form.owner_name.data.strip() + "'s Shop"
+            shop = Shop(
+                user_id=user.id,
+                name=shop_name,
+                initial_investment=form.total_investment.data or 0,
+            )
+            db.session.add(shop)
+            db.session.flush()
+
+            # Handle shop image upload
+            if form.shop_image.data:
+                img_path = _save_shop_image(form.shop_image.data, shop.id)
+                if img_path:
+                    shop.shop_image = img_path
+
+            user.start_trial(days=7)
+
+            sub = Subscription(
+                shop_id=shop.id,
+                plan='basic',
+                status='trial',
+                trial_start=user.trial_start,
+                trial_end=user.trial_end,
+            )
+            db.session.add(sub)
+            ensure_opening_cash(shop)
+            db.session.commit()
+        except IntegrityError:
+            # The pre-check above misses races and MySQL's trailing-space
+            # comparison — the unique index is the real gate. Never 500 here.
+            db.session.rollback()
+            if phone and User.query.filter_by(phone=phone).first():
+                flash('This phone number is already registered. Please log in.', 'warning')
+            elif User.query.filter_by(email=email).first():
+                flash('This email is already registered. Please log in or use a different email.', 'warning')
+            else:
+                flash('Could not create your account. Please try again.', 'warning')
             return redirect(url_for('auth.login'))
-
-        user = User(
-            owner_name=form.owner_name.data.strip(),
-            phone=form.phone.data.strip(),
-            email=form.email.data.strip().lower(),
-            language=form.language.data,
-        )
-        user.set_password(form.password.data)
-        user.generate_verification_token()
-        db.session.add(user)
-        db.session.flush()
-
-        shop_name = form.shop_name.data.strip() if form.shop_name.data and form.shop_name.data.strip() else form.owner_name.data.strip() + "'s Shop"
-        shop = Shop(
-            user_id=user.id,
-            name=shop_name,
-            initial_investment=form.total_investment.data or 0,
-        )
-        db.session.add(shop)
-        db.session.flush()
-
-        # Handle shop image upload
-        if form.shop_image.data:
-            img_path = _save_shop_image(form.shop_image.data, shop.id)
-            if img_path:
-                shop.shop_image = img_path
-
-        user.start_trial(days=7)
-
-        sub = Subscription(
-            shop_id=shop.id,
-            plan='basic',
-            status='trial',
-            trial_start=user.trial_start,
-            trial_end=user.trial_end,
-        )
-        db.session.add(sub)
-        ensure_opening_cash(shop)
-        db.session.commit()
 
         # Send verification email
         send_verification_email(user)
@@ -202,6 +227,11 @@ def login():
             flash('Your account has been deactivated.', 'warning')
             return redirect(url_for('auth.login'))
         
+        # Admins are never gated on email verification (also self-heals admin
+        # accounts created before verification existed).
+        if user.is_admin and not user.email_verified_at:
+            user.verify_email()
+
         # Check if email is verified
         if not user.email_verified_at:
             flash('Please verify your email before logging in. Check your inbox.', 'warning')

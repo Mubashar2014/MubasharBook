@@ -1,10 +1,15 @@
 {% extends "app_layout.html" %}
 
-{% block title %}Profit & Loss — Mubashar's Book{% endblock %}
+{% block title %}Profit & Loss — Mubashar Khata{% endblock %}
 {% block page_title %}Profit & Loss{% endblock %}
 {% block page_path %}Reports / P&L{% endblock %}
 
 {% block content %}
+<div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+    <button type="button" class="btn btn-outline" onclick="window.print()">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i> Print / Save as PDF
+    </button>
+</div>
 <!-- Net Profit Hero Card -->
 <div class="stat-grid" style="grid-template-columns: 1fr; margin-bottom: 24px;">
     <div class="stat-card" style="text-align:center; padding:28px 22px;">

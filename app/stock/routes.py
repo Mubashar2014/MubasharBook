@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.stock import stock_bp
@@ -9,12 +9,22 @@ from app.models.khata import KhataEntry
 from app.models.shop import Shop
 from app.models.shareholder import Partner
 from app.extensions import db
-from app.utils import get_user_shop, ensure_opening_cash, recalc_cash_balances, OPENING_CAPITAL_DESC
+from app.utils import (
+    get_user_shop, ensure_opening_cash, recalc_cash_balances, OPENING_CAPITAL_DESC,
+    normalise_whatsapp, validate_whatsapp, party_whatsapp_map, wa_me_link,
+)
 from sqlalchemy import or_
 
 
 def _shop_investors(shop_id):
     return Partner.query.filter_by(shop_id=shop_id, role='investor').order_by(Partner.name.asc()).all()
+
+
+def _funder_name(shop_id, partner_id):
+    if not partner_id:
+        return None
+    partner = Partner.query.filter_by(id=partner_id, shop_id=shop_id).first()
+    return partner.name if partner else None
 
 
 def _resolve_funder(shop_id, raw):
@@ -184,6 +194,8 @@ def stock_in():
     form = StockInForm()
     investors = _shop_investors(shop.id)
     selected_funder = _resolve_funder(shop.id, request.form.get('funded_by_partner_id')) if request.method == 'POST' else None
+    ctx = dict(form=form, action='Add', investors=investors, selected_funder=selected_funder,
+               party_numbers=party_whatsapp_map(shop.id))
 
     if form.validate_on_submit():
         total_cost = float(form.cost_price.data) * form.quantity.data
@@ -192,15 +204,20 @@ def stock_in():
         expense_amt = float(form.purchase_expense_amount.data or 0)
         supplier = form.supplier_name.data.strip() if form.supplier_name and form.supplier_name.data.strip() else None
 
+        wa_error = validate_whatsapp(form.purchase_whatsapp.data)
+        if wa_error:
+            flash(wa_error, 'warning')
+            return render_template('stock/stock_in.html', **ctx)
+
         # If there's a pending amount, supplier name is required
         if pending > 0 and not supplier:
             flash(f'Rs {pending:,.0f} is pending — please enter a supplier name to track in khata.', 'warning')
-            return render_template('stock/stock_in.html', form=form, action='Add', investors=investors, selected_funder=selected_funder)
+            return render_template('stock/stock_in.html', **ctx)
 
         # Cannot overpay at purchase
         if pending < 0:
             flash(f'You cannot pay more than the total cost (Rs {total_cost:,.0f}).', 'warning')
-            return render_template('stock/stock_in.html', form=form, action='Add', investors=investors, selected_funder=selected_funder)
+            return render_template('stock/stock_in.html', **ctx)
 
         item = StockItem(
             shop_id=shop.id,
@@ -209,6 +226,7 @@ def stock_in():
             quantity=form.quantity.data,
             cost_price=form.cost_price.data,
             supplier_name=supplier,
+            purchase_whatsapp=normalise_whatsapp(form.purchase_whatsapp.data) or None,
             purchase_date=form.purchase_date.data,
             purchase_paid=paid_now,
             purchase_pending=pending,
@@ -250,10 +268,10 @@ def stock_in():
 
         db.session.commit()
         flash('Stock added successfully.', 'success')
-        return redirect(url_for('stock.list_stock'))
+        return redirect(url_for('stock.receipt', item_id=item.id, type='purchase'))
 
     form.purchase_date.data = date.today()
-    return render_template('stock/stock_in.html', form=form, action='Add', investors=investors, selected_funder=selected_funder)
+    return render_template('stock/stock_in.html', **ctx)
 
 
 # ── STOCK OUT (SELL) ─────────────────────────────────────
@@ -264,6 +282,7 @@ def stock_out(item_id):
     shop = get_user_shop()
     item = StockItem.query.filter_by(id=item_id, shop_id=shop.id, status='in_stock').first_or_404()
     form = StockOutForm()
+    ctx = dict(form=form, item=item, party_numbers=party_whatsapp_map(shop.id))
 
     if form.validate_on_submit():
         sale_total = float(form.sale_price.data) * item.quantity
@@ -272,15 +291,21 @@ def stock_out(item_id):
         expense_amt = float(form.sale_expense_amount.data or 0)
         customer = form.customer_name.data.strip() if form.customer_name and form.customer_name.data.strip() else None
 
+        wa_error = validate_whatsapp(form.sale_whatsapp.data)
+        if wa_error:
+            flash(wa_error, 'warning')
+            return render_template('stock/stock_out.html', **ctx)
+
         # If there's a pending amount, customer name is required
         if pending > 0 and not customer:
             flash(f'Rs {pending:,.0f} is pending — please enter a customer name to track in khata.', 'warning')
-            return render_template('stock/stock_out.html', form=form, item=item)
+            return render_template('stock/stock_out.html', **ctx)
 
         # Update stock item
         item.status = 'sold'
         item.sale_price = form.sale_price.data
         item.customer_name = customer
+        item.sale_whatsapp = normalise_whatsapp(form.sale_whatsapp.data) or None
         item.sale_date = form.sale_date.data
         item.sale_received = received_now
         item.sale_pending = pending
@@ -319,10 +344,10 @@ def stock_out(item_id):
 
         db.session.commit()
         flash('Stock sold successfully.', 'success')
-        return redirect(url_for('stock.list_stock'))
+        return redirect(url_for('stock.receipt', item_id=item.id, type='sale'))
 
     form.sale_date.data = date.today()
-    return render_template('stock/stock_out.html', form=form, item=item)
+    return render_template('stock/stock_out.html', **ctx)
 
 
 # ── EDIT ─────────────────────────────────────────────────
@@ -345,18 +370,19 @@ def edit_stock(item_id):
         # If there's a pending amount, supplier name is required
         if pending > 0 and not supplier:
             flash(f'Rs {pending:,.0f} is pending — please enter a supplier name to track in khata.', 'warning')
-            return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder)
+            return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder, party_numbers=party_whatsapp_map(shop.id))
 
         # Cannot overpay at purchase
         if pending < 0:
             flash(f'You cannot pay more than the total cost (Rs {total_cost:,.0f}).', 'warning')
-            return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder)
+            return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder, party_numbers=party_whatsapp_map(shop.id))
 
         item.model_name = form.model_name.data.strip()
         item.imei = form.imei.data.strip() if form.imei.data else None
         item.quantity = form.quantity.data
         item.cost_price = form.cost_price.data
         item.supplier_name = supplier
+        item.purchase_whatsapp = normalise_whatsapp(form.purchase_whatsapp.data) or None
         item.purchase_date = form.purchase_date.data
         item.purchase_paid = paid_now
         item.purchase_pending = pending
@@ -426,7 +452,7 @@ def edit_stock(item_id):
         flash('Stock item updated.', 'success')
         return redirect(url_for('stock.list_stock'))
 
-    return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder)
+    return render_template('stock/stock_in.html', form=form, action='Edit', item=item, investors=investors, selected_funder=selected_funder, party_numbers=party_whatsapp_map(shop.id))
 
 
 # ── UN-SELL (REVERT A SALE) ──────────────────────────────
@@ -519,3 +545,68 @@ def delete_stock(item_id):
         'success',
     )
     return redirect(url_for('stock.list_stock'))
+
+
+# ── RECEIPT (printable / shareable) ─────────────────────
+
+@stock_bp.route('/<int:item_id>/receipt')
+@login_required
+def receipt(item_id):
+    """Printable purchase/sale receipt — share on WhatsApp or print as PDF."""
+    shop = get_user_shop()
+    item = StockItem.query.filter_by(id=item_id, shop_id=shop.id).first_or_404()
+
+    rtype = request.args.get('type', 'sale' if item.status == 'sold' else 'purchase')
+    if rtype not in ('purchase', 'sale'):
+        rtype = 'purchase'
+    if rtype == 'sale' and item.status != 'sold':
+        flash('This phone is not sold yet — showing the purchase receipt.', 'warning')
+        rtype = 'purchase'
+
+    settled = request.args.get('settled') == '1'
+    is_purchase = rtype == 'purchase'
+
+    entry_id = item.purchase_khata_entry_id if is_purchase else item.sale_khata_entry_id
+    entry = KhataEntry.query.filter_by(id=entry_id, shop_id=shop.id).first() if entry_id else None
+
+    unit_price = float(item.cost_price or 0) if is_purchase else float(item.sale_price or 0)
+    total = unit_price * item.quantity
+    paid = float(item.purchase_paid or 0) if is_purchase else float(item.sale_received or 0)
+    if entry:
+        pending = 0.0 if entry.status == 'settled' else float(entry.amount) - float(entry.settled_amount or 0)
+    else:
+        pending = float(item.purchase_pending or 0) if is_purchase else float(item.sale_pending or 0)
+
+    party_number = item.purchase_whatsapp if is_purchase else item.sale_whatsapp
+    party_name = item.supplier_name if is_purchase else item.customer_name
+    side_label = 'Purchase Receipt' if is_purchase else 'Sale Receipt'
+
+    share_text = (
+        f"{shop.name} — {side_label}: {item.model_name}"
+        f"{' IMEI ' + item.imei if item.imei else ''} x{item.quantity}, "
+        f"Rs {total:,.0f} total, Rs {paid:,.0f} paid"
+        + (f", Rs {pending:,.0f} pending." if pending > 0 else ", fully paid.")
+    )
+    wa_link = wa_me_link(party_number, share_text)
+
+    return render_template(
+        'stock/receipt.html',
+        shop=shop,
+        item=item,
+        now=datetime.utcnow(),
+        funder_name=_funder_name(shop.id, item.funded_by_partner_id),
+        rtype=rtype,
+        is_purchase=is_purchase,
+        settled=settled,
+        entry=entry,
+        unit_price=unit_price,
+        total=total,
+        paid=paid,
+        pending=pending,
+        side_label=side_label,
+        party_label='Supplier' if is_purchase else 'Customer',
+        party_name=party_name,
+        party_number=party_number,
+        wa_link=wa_link,
+        share_text=share_text,
+    )

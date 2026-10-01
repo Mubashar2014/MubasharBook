@@ -40,3 +40,17 @@ class ResetPasswordForm(FlaskForm):
 
 class ResendVerificationForm(FlaskForm):
     email = EmailField('Email address', validators=[DataRequired(), Email(), Length(max=120)])
+
+
+class ProfileForm(FlaskForm):
+    owner_name = StringField('Owner name', validators=[DataRequired(), Length(max=120)])
+    phone = StringField('Phone number', validators=[Optional(), Length(max=20)])
+    language = SelectField('Preferred language',
+                          choices=[('en', 'English'), ('ur', 'Roman Urdu')])
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Current password', validators=[DataRequired()])
+    password = PasswordField('New password', validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField('Confirm new password',
+                                     validators=[DataRequired(), EqualTo('password', message='New passwords must match.')])

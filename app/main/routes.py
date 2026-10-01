@@ -7,12 +7,19 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from app.main import main_bp
 from app.extensions import db
+from app.auth.forms import ProfileForm, ChangePasswordForm
 from app.models.shop import Shop
 from app.models.cashbook import CashEntry
 from app.models.stock import StockItem
 from app.models.expense import Expense
 from app.models.khata import KhataEntry
-from app.utils import ensure_opening_cash, get_cash_balance, OPENING_CAPITAL_DESC
+from app.utils import (
+    ensure_opening_cash,
+    get_cash_balance,
+    OPENING_CAPITAL_DESC,
+    apply_profile_update,
+    apply_password_change,
+)
 
 
 def _save_shop_image(file_storage, shop_id):
@@ -165,6 +172,16 @@ def dashboard():
     )
 
 
+def _render_settings(profile_form=None, password_form=None):
+    """Settings page: shop card + profile card + security card."""
+    return render_template(
+        'settings.html',
+        shop=current_user.shop,
+        profile_form=profile_form or ProfileForm(obj=current_user),
+        password_form=password_form or ChangePasswordForm(),
+    )
+
+
 @main_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -172,17 +189,51 @@ def settings():
     if request.method == 'POST':
         shop.name = request.form.get('shop_name', '').strip()
         shop.initial_investment = Decimal(request.form.get('initial_investment') or 0)
-        
+
         if 'shop_image' in request.files:
             img = request.files['shop_image']
             if img and img.filename:
                 img_path = _save_shop_image(img, shop.id)
                 if img_path:
                     shop.shop_image = img_path
-        
+
         ensure_opening_cash(shop)
         db.session.commit()
         flash('Shop details updated.', 'success')
         return redirect(url_for('main.settings'))
 
-    return render_template('settings.html', shop=shop)
+    return _render_settings()
+
+
+@main_bp.route('/settings/profile', methods=['GET', 'POST'])
+@login_required
+def settings_profile():
+    form = ProfileForm(obj=current_user)
+    if form.validate_on_submit():
+        error = apply_profile_update(
+            current_user, form.owner_name.data, form.phone.data, form.language.data
+        )
+        if error:
+            flash(error, 'warning')
+        else:
+            flash('Profile updated.', 'success')
+            return redirect(url_for('main.settings') + '#profile')
+
+    return _render_settings(profile_form=form)
+
+
+@main_bp.route('/settings/password', methods=['GET', 'POST'])
+@login_required
+def settings_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        error = apply_password_change(
+            current_user, form.current_password.data, form.password.data
+        )
+        if error:
+            flash(error, 'warning')
+        else:
+            flash('Password changed. Use your new password the next time you log in.', 'success')
+            return redirect(url_for('main.settings') + '#password')
+
+    return _render_settings(password_form=form)

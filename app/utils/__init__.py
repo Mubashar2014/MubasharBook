@@ -1,8 +1,11 @@
+import re
 from datetime import date
+from urllib.parse import quote
 from flask_login import current_user
 from sqlalchemy import case, func
 from app.models.shop import Shop
 from app.models.cashbook import CashEntry
+from app.models.user import User
 from app.extensions import db
 
 OPENING_CAPITAL_DESC = 'Opening capital'
@@ -90,6 +93,50 @@ def get_cash_balance(shop_id):
     return float(net or 0)
 
 
+def apply_profile_update(user, owner_name, phone, language):
+    """Validate and save profile edits.
+
+    Shared by /settings/profile and the admin account page.
+    Returns an error message to flash, or None on success.
+    """
+    owner_name = (owner_name or '').strip()
+    if not owner_name:
+        return 'Owner name cannot be empty.'
+
+    phone = (phone or '').strip()
+    if len(phone) > 20:
+        return 'Phone number is too long (max 20 characters).'
+    if phone and User.query.filter(User.phone == phone, User.id != user.id).first():
+        return 'This phone number is already registered to another account.'
+    if not phone and user.phone:
+        return 'Phone number cannot be empty.'
+
+    user.owner_name = owner_name
+    user.phone = phone
+    user.language = language if language in ('en', 'ur') else (user.language or 'en')
+    db.session.commit()
+    return None
+
+
+def apply_password_change(user, current_password, new_password):
+    """Verify the current password then set the new one.
+
+    Shared by /settings/password and the admin account page.
+    Returns an error message to flash, or None on success.
+    """
+    if not user.check_password(current_password or ''):
+        return 'Current password is incorrect.'
+
+    new_password = new_password or ''
+    if len(new_password) < 8:
+        return 'New password must be at least 8 characters.'
+
+    user.set_password(new_password)
+    user.clear_reset_token()
+    db.session.commit()
+    return None
+
+
 def format_currency(amount):
     """Format a number as Rs with comma separators."""
     if amount is None:
@@ -99,3 +146,71 @@ def format_currency(amount):
         return 'Rs {:,.0f}'.format(val)
     except (ValueError, TypeError):
         return 'Rs 0'
+
+def normalise_whatsapp(raw):
+    """Digits-only form of a phone/WhatsApp number ('' when blank)."""
+    return re.sub(r'\D', '', raw or '')
+
+
+def validate_whatsapp(raw):
+    """Error message for a bad WhatsApp number, or None when blank/valid."""
+    if not (raw or '').strip():
+        return None
+    if not 7 <= len(normalise_whatsapp(raw)) <= 15:
+        return 'Enter a valid WhatsApp number (7-15 digits), e.g. 0300 1234567.'
+    return None
+
+
+def wa_me_link(number, text=''):
+    """Build a wa.me deep link, turning a local PK number into international."""
+    digits = normalise_whatsapp(number)
+    if not digits:
+        return None
+    if digits.startswith('92') and len(digits) >= 11:
+        intl = digits
+    elif digits.startswith('0'):
+        intl = '92' + digits[1:]
+    elif len(digits) <= 9:
+        intl = '92' + digits
+    else:
+        intl = digits
+    link = f'https://wa.me/{intl}'
+    if text:
+        link += '?text=' + quote(text)
+    return link
+
+
+def party_whatsapp_map(shop_id):
+    """{party_name: last WhatsApp number used} for prefilling stock forms."""
+    from app.models.stock import StockItem
+
+    rows = StockItem.query.filter(StockItem.shop_id == shop_id).order_by(StockItem.id.desc()).all()
+    known = {}
+    for row in rows:
+        if row.supplier_name and row.purchase_whatsapp and row.supplier_name not in known:
+            known[row.supplier_name] = row.purchase_whatsapp
+        if row.customer_name and row.sale_whatsapp and row.customer_name not in known:
+            known[row.customer_name] = row.sale_whatsapp
+    return known
+
+
+def wa_share_link(number, text=''):
+    """wa.me link; falls back to WhatsApp's contact picker when number unknown."""
+    link = wa_me_link(number, text)
+    if link:
+        return link
+    return 'https://wa.me/?text=' + quote(text)
+
+
+def reminder_text(shop_name, party_name, amount, direction):
+    """Message used by the 'send reminder' WhatsApp button on khata pages."""
+    amt = f'Rs {float(amount):,.0f}'
+    if direction == 'receivable':
+        return (
+            f'Assalam-o-Alaikum {party_name}, a gentle reminder from {shop_name}: '
+            f'{amt} is pending on your account. Thank you!'
+        )
+    return (
+        f'Assalam-o-Alaikum {party_name}, from {shop_name}: '
+        f'{amt} is pending on our side and will be cleared soon. JazakAllah.'
+    )
