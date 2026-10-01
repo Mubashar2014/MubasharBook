@@ -546,7 +546,7 @@ def test_email():
         return redirect(url_for('admin.test_email'))
     
     # GET request - show form
-    users = User.query.filter_by(is_admin=False).order_by(User.owner_name).all()
+    users = User.query.order_by(User.is_admin.desc(), User.owner_name).all()
     return render_template('admin/test_email.html', users=users)
 
 
