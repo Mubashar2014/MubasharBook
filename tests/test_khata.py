@@ -129,3 +129,24 @@ def test_already_settled_entry_shows_warning(logged_in_client, app):
     logged_in_client.post(f'/khata/{khata_id}/settle', follow_redirects=False)
     resp = logged_in_client.post(f'/khata/{khata_id}/settle', follow_redirects=False)
     assert resp.status_code == 302
+
+
+def test_khata_type_filter_hides_other_section(logged_in_client):
+    resp = logged_in_client.get('/khata/?type=receivable')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'Customers with pending payments' in html
+    assert 'Suppliers with pending payments' not in html
+    assert 'Show all' in html
+
+    resp = logged_in_client.get('/khata/?type=payable')
+    html = resp.get_data(as_text=True)
+    assert 'Suppliers with pending payments' in html
+    assert 'Customers with pending payments' not in html
+    assert 'Show all' in html
+
+    resp = logged_in_client.get('/khata/')
+    html = resp.get_data(as_text=True)
+    assert 'Customers with pending payments' in html
+    assert 'Suppliers with pending payments' in html
+    assert 'Show all' not in html

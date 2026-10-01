@@ -182,3 +182,25 @@ def test_template_badge_classes_defined(app):
         used.update(re.findall(r'badge-[a-z]+', f.read_text()))
     missing = sorted(b for b in used if not re.search(rf'\.{re.escape(b)}\b', css))
     assert not missing, f'Badge classes used in templates but not in app.css: {missing}'
+
+
+def test_dashboard_card_navigation_links(logged_in_client, app):
+    """Dashboard stat cards are clickable and lead to the agreed pages."""
+    resp = _get(app, logged_in_client, '/dashboard')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    for href in [
+        '/cashbook/',            # cash in hand + today's net
+        '/stock/in',             # invested in stock + quick add
+        '/khata/?type=receivable',
+        '/khata/?type=payable',
+        '/stock/?status=sold',   # today's sales
+        '/reports/pnl',          # revenue / cogs / net pnl
+        '/expenses/',            # expenses mini card + quick add
+        '/expenses/add',
+        '/cashbook/add',
+        '/auth/logout',          # sidebar logout
+    ]:
+        assert href in html, f'dashboard missing link {href}'
+    assert 'quickAddMenu' in html
+    assert 'Buy Stock' in html

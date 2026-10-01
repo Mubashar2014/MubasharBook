@@ -93,6 +93,61 @@ def add_expense():
     return render_template('expenses/form.html', form=form)
 
 
+@expenses_bp.route('/<int:expense_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    shop = get_user_shop()
+    expense = Expense.query.filter_by(id=expense_id, shop_id=shop.id).first_or_404()
+    seed_categories(shop.id)
+
+    form = ExpenseForm(obj=expense)
+    categories = ExpenseCategory.query.filter_by(shop_id=shop.id).order_by(
+        ExpenseCategory.is_default.desc(), ExpenseCategory.name
+    ).all()
+    form.category_id.choices = [(c.id, c.name) for c in categories]
+
+    if form.validate_on_submit():
+        expense.category_id = form.category_id.data
+        expense.amount = form.amount.data
+        expense.description = form.description.data or ''
+        expense.expense_date = form.expense_date.data
+
+        # Keep the mirrored cashbook entry in sync (same recipe as add_expense).
+        cash = CashEntry.query.filter_by(linked_expense_id=expense.id).first()
+        if cash:
+            category = next((c.name for c in categories if c.id == form.category_id.data), 'Expense')
+            desc = f"Expense: {category}"
+            if expense.description:
+                desc = f"{desc} — {expense.description}"
+            cash.amount = expense.amount
+            cash.entry_date = expense.expense_date
+            cash.description = desc[:300]
+            recalc_cash_balances(shop.id)
+        db.session.commit()
+        flash('Expense updated.', 'success')
+        return redirect(url_for('expenses.list_expenses'))
+
+    return render_template('expenses/form.html', form=form, expense=expense)
+
+
+@expenses_bp.route('/<int:expense_id>/delete', methods=['POST'])
+@login_required
+def delete_expense(expense_id):
+    shop = get_user_shop()
+    expense = Expense.query.filter_by(id=expense_id, shop_id=shop.id).first_or_404()
+
+    # Remove the mirrored cashbook entry first so cash-in-hand recalculates.
+    cash = CashEntry.query.filter_by(linked_expense_id=expense.id).first()
+    if cash:
+        db.session.delete(cash)
+    db.session.delete(expense)
+    db.session.flush()
+    recalc_cash_balances(shop.id)
+    db.session.commit()
+    flash('Expense deleted.', 'success')
+    return redirect(url_for('expenses.list_expenses'))
+
+
 @expenses_bp.route('/categories')
 @login_required
 def list_categories():

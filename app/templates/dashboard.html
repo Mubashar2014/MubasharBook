@@ -57,43 +57,43 @@
 
 <!-- Where Money Is -->
 <div class="stat-grid animate-on-scroll" style="margin-bottom:24px;">
-    <div class="stat-card">
+    <a href="{{ url_for('cashbook.list_entries') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Cash in Hand</div>
             <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="wallet" style="width:18px;height:18px;"></i></div>
         </div>
         <div class="v {% if cash_in_hand >= 0 %}pos{% else %}neg{% endif %} num">Rs {{ "{:,.0f}".format(cash_in_hand) }}</div>
         <div class="delta"><i data-lucide="banknote" style="width:12px;height:12px;"></i> Available now</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="{{ url_for('stock.stock_in') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Invested in Stock</div>
             <div class="stat-icon" style="background:var(--gold-tint);color:var(--gold-deep);"><i data-lucide="package" style="width:18px;height:18px;"></i></div>
         </div>
         <div class="v num">Rs {{ "{:,.0f}".format(stock_value) }}</div>
         <div class="delta"><i data-lucide="box" style="width:12px;height:12px;"></i> Unsold inventory cost</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="{{ url_for('khata.list_khata', type='receivable') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Pending from Customers</div>
             <div class="stat-icon" style="background:var(--ledger-tint);color:var(--ledger);"><i data-lucide="user-plus" style="width:18px;height:18px;"></i></div>
         </div>
         <div class="v pos num">Rs {{ "{:,.0f}".format(pending_receivable) }}</div>
         <div class="delta"><i data-lucide="users" style="width:12px;height:12px;"></i> Receivables</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="{{ url_for('khata.list_khata', type='payable') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Pending to Suppliers</div>
             <div class="stat-icon" style="background:var(--cashout-tint);color:var(--cashout);"><i data-lucide="truck" style="width:18px;height:18px;"></i></div>
         </div>
         <div class="v neg num">Rs {{ "{:,.0f}".format(pending_payable) }}</div>
         <div class="delta"><i data-lucide="truck" style="width:12px;height:12px;"></i> Payables</div>
-    </div>
+    </a>
 </div>
 
 <!-- Today's Activity -->
 <div class="stat-grid animate-on-scroll" style="margin-bottom:24px;">
-    <div class="stat-card">
+    <a href="{{ url_for('cashbook.list_entries') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Today's Net</div>
             <div class="stat-icon" style="background:{% if today_net >= 0 %}var(--ledger-tint){% else %}var(--cashout-tint){% endif %};color:{% if today_net >= 0 %}var(--ledger){% else %}var(--cashout){% endif %};">
@@ -102,14 +102,31 @@
         </div>
         <div class="v {% if today_net >= 0 %}pos{% endif %} num">Rs {{ "{:,.0f}".format(today_net) }}</div>
         <div class="delta">In − Out (incl. expenses)</div>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a href="{{ url_for('stock.list_stock', status='sold') }}" class="stat-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div class="l">Today's Sales</div>
             <div class="stat-icon" style="background:var(--gold-tint);color:var(--gold-deep);"><i data-lucide="shopping-cart" style="width:18px;height:18px;"></i></div>
         </div>
         <div class="v pos num">Rs {{ "{:,.0f}".format(today_sales) }}</div>
         <div class="delta"><i data-lucide="calendar" style="width:12px;height:12px;"></i> {{ today.strftime('%d %b %Y') }}</div>
+    </a>
+    <!-- Empty-slot quick add -->
+    <div class="stat-card quick-add-card" id="quickAddCard" role="button" tabindex="0"
+         aria-haspopup="true" aria-expanded="false" aria-label="Add new entry"
+         onclick="toggleQuickAdd(event)"
+         onkeydown="if(event.key==='Enter'){event.preventDefault();toggleQuickAdd(event);}">
+        <div class="qa-inner">
+            <div class="qa-plus"><i data-lucide="plus" style="width:24px;height:24px;"></i></div>
+            <div class="l">Add</div>
+            <div class="delta">Quick entry</div>
+        </div>
+        <div class="qa-menu" id="quickAddMenu" style="display:none;" onclick="event.stopPropagation()">
+            <a href="{{ url_for('stock.stock_in') }}"><i data-lucide="smartphone" style="width:15px;height:15px;"></i> Buy Stock</a>
+            <a href="{{ url_for('cashbook.add_entry') }}"><i data-lucide="banknote" style="width:15px;height:15px;"></i> Cash Entry</a>
+            <a href="{{ url_for('expenses.add_expense') }}"><i data-lucide="receipt" style="width:15px;height:15px;"></i> Expense</a>
+            <a href="{{ url_for('khata.list_khata') }}"><i data-lucide="clipboard-list" style="width:15px;height:15px;"></i> Khata</a>
+        </div>
     </div>
 </div>
 
@@ -125,22 +142,22 @@
         </div>
 
         <div class="stat-grid" style="margin-bottom:16px;">
-            <div class="stat-card">
+            <a href="{{ url_for('reports.pnl') }}" class="stat-card">
                 <div class="l">Revenue (Sold Phones)</div>
                 <div class="v pos num">Rs {{ "{:,.0f}".format(month_revenue) }}</div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="{{ url_for('reports.pnl') }}" class="stat-card">
                 <div class="l">Cost of Sold Phones</div>
                 <div class="v neg num">Rs {{ "{:,.0f}".format(month_cogs) }}</div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="{{ url_for('expenses.list_expenses') }}" class="stat-card">
                 <div class="l">Expenses</div>
                 <div class="v neg num">Rs {{ "{:,.0f}".format(month_expenses or 0) }}</div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="{{ url_for('reports.pnl') }}" class="stat-card">
                 <div class="l">Net P&L</div>
                 <div class="v {% if monthly_pnl >= 0 %}pos{% endif %} num">Rs {{ "{:,.0f}".format(monthly_pnl) }}</div>
-            </div>
+            </a>
         </div>
 
         <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:16px;">
@@ -255,5 +272,67 @@
 .section-head {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
 }
+a.stat-card { display: block; color: inherit; text-decoration: none; cursor: pointer; }
+.quick-add-card {
+    position: relative; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 120px;
+}
+/* While the menu is open the parent grid/card must NOT create a stacking
+   context (transform) or the menu paints behind the P&L card below it. */
+.stat-grid.qa-open { transform: none; }
+.quick-add-card.qa-open, .quick-add-card.qa-open:hover { transform: none; }
+.qa-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.qa-plus {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(28,27,25,0.18);
+    transition: transform 0.15s ease;
+}
+.quick-add-card:hover .qa-plus { transform: scale(1.08); }
+.qa-menu {
+    position: absolute; top: calc(100% + 8px); left: 10px;
+    min-width: 190px; background: #FFFDF6;
+    border: 1px solid #DDD4B8; border-radius: 12px;
+    box-shadow: 0 16px 44px rgba(28,27,25,0.20);
+    z-index: 70; padding: 6px;
+}
+.qa-menu a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px;
+    font-family: var(--font-sans); font-size: 13.5px; font-weight: 600;
+    color: var(--ink); text-decoration: none;
+}
+.qa-menu a:hover { background: var(--ledger-tint); color: var(--ledger); }
+.qa-menu a svg { width: 15px; height: 15px; flex-shrink: 0; }
 </style>
+
+<script>
+function toggleQuickAdd(e) {
+    if (e) e.stopPropagation();
+    var menu = document.getElementById('quickAddMenu');
+    var card = document.getElementById('quickAddCard');
+    if (!menu || !card) return;
+    var open = menu.style.display === 'block';
+    menu.style.display = open ? 'none' : 'block';
+    card.setAttribute('aria-expanded', String(!open));
+    card.classList.toggle('qa-open', !open);
+    var grid = card.closest('.stat-grid');
+    if (grid) grid.classList.toggle('qa-open', !open);
+}
+document.addEventListener('click', function () {
+    var menu = document.getElementById('quickAddMenu');
+    if (menu && menu.style.display === 'block') {
+        menu.style.display = 'none';
+        var card = document.getElementById('quickAddCard');
+        if (card) {
+            card.setAttribute('aria-expanded', 'false');
+            card.classList.remove('qa-open');
+            var grid = card.closest('.stat-grid');
+            if (grid) grid.classList.remove('qa-open');
+        }
+    }
+});
+</script>
 {% endblock %}

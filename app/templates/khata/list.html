@@ -30,6 +30,7 @@
 </div>
 
 <!-- Parties who owe us -->
+{% if type_filter != 'payable' %}
 <div class="card animate-on-scroll" style="margin-bottom:20px;">
     <div class="card-pad">
         <div class="section-head">
@@ -38,6 +39,7 @@
                 Hum Par Haq Hai
             </h3>
             <span style="font-size:13px;color:var(--ink-faint);">Customers with pending payments</span>
+            {% if type_filter %}<a href="{{ url_for('khata.list_khata') }}" class="btn btn-outline btn-sm">Show all</a>{% endif %}
         </div>
 
         {% set receivable_parties = [] %}
@@ -77,8 +79,10 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 
 <!-- Parties we owe -->
+{% if type_filter != 'receivable' %}
 <div class="card animate-on-scroll">
     <div class="card-pad">
         <div class="section-head">
@@ -87,6 +91,7 @@
                 Hum Par Ada Karna Hai
             </h3>
             <span style="font-size:13px;color:var(--ink-faint);">Suppliers with pending payments</span>
+            {% if type_filter %}<a href="{{ url_for('khata.list_khata') }}" class="btn btn-outline btn-sm">Show all</a>{% endif %}
         </div>
 
         {% set payable_parties = [] %}
@@ -126,4 +131,5 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
 {% endblock %}

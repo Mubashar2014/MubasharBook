@@ -18,6 +18,9 @@ from sqlalchemy import func
 def list_khata():
     shop = get_user_shop()
     view = request.args.get('view', 'parties')  # parties or all
+    type_filter = request.args.get('type', '')
+    if type_filter not in ('receivable', 'payable'):
+        type_filter = ''
 
     # Party-wise summary (pending only)
     party_summary = db.session.query(
@@ -56,6 +59,7 @@ def list_khata():
         total_receivable=total_receivable,
         total_payable=total_payable,
         view=view,
+        type_filter=type_filter,
         wa_links=wa_links,
     )
 

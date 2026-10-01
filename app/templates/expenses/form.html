@@ -1,11 +1,11 @@
 {% extends "app_layout.html" %}
-{% block title %}Add Expense — Mubashar Khata{% endblock %}
-{% block page_title %}Add Expense{% endblock %}
-{% block page_path %}Home / Expenses / Add{% endblock %}
+{% block title %}{{ 'Edit' if expense is defined and expense else 'Add' }} Expense — Mubashar Khata{% endblock %}
+{% block page_title %}{{ 'Edit' if expense is defined and expense else 'Add' }} Expense{% endblock %}
+{% block page_path %}Home / Expenses / {{ 'Edit' if expense is defined and expense else 'Add' }}{% endblock %}
 
 {% block content %}
 <div class="card card-pad" style="max-width:540px;">
-    <h3 style="margin-bottom:18px;">New Expense</h3>
+    <h3 style="margin-bottom:18px;">{{ 'Edit Expense' if expense is defined and expense else 'New Expense' }}</h3>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -58,7 +58,7 @@
 
         <div style="display:flex; gap:10px; margin-top:20px;">
             <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline" style="flex:1;">Cancel</a>
-            <button type="submit" class="btn btn-primary" style="flex:1;">Save Expense</button>
+            <button type="submit" class="btn btn-primary" style="flex:1;">{{ 'Update Expense' if expense is defined and expense else 'Save Expense' }}</button>
         </div>
     </form>
 </div>

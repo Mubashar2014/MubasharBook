@@ -10,7 +10,46 @@ The email system is now enabled! Here's how to configure it.
 
 ### Step 1: Choose Email Provider
 
-#### Option A: Gmail (For Testing/Development)
+#### Option A: cPanel Mailbox (Recommended for Production — mubasharkhata.com)
+
+**Pros:**
+- Uses the mailbox you already get with your hosting (`info@mubasharkhata.com`)
+- SPF/DKIM aligned with your domain → best deliverability
+- No third-party account needed
+
+**Cons:**
+- Sending limited by your hosting plan (still plenty for this app)
+
+**Setup Steps:**
+
+1. **Create the mailbox** in cPanel → *Email Accounts* → `info@mubasharkhata.com`
+
+2. **Check DNS** in cPanel → *Email Deliverability*:
+   - SPF + DKIM records for `mubasharkhata.com` should show valid (Repair if not)
+   - *Email Routing* → **Local Mail Exchanger**
+
+3. **Get SMTP details** from cPanel → Email Accounts → *Connect Devices*
+   (outgoing server is usually just `mubasharkhata.com`)
+
+4. **Update `.env`**:
+   ```env
+   MAIL_SERVER=mubasharkhata.com
+   MAIL_PORT=465
+   MAIL_USE_TLS=False
+   MAIL_USE_SSL=True
+   MAIL_USERNAME=info@mubasharkhata.com
+   MAIL_PASSWORD=your-mailbox-password
+   MAIL_DEFAULT_SENDER="Mubashar Khata <info@mubasharkhata.com>"
+   BASE_URL=https://mubasharkhata.com
+   ```
+   If Connect Devices shows port 587/TLS instead, use
+   `MAIL_PORT=587`, `MAIL_USE_TLS=True`, `MAIL_USE_SSL=False`.
+
+5. Restart the app, then Admin → *Test Email* to verify.
+
+---
+
+#### Option B: Gmail (For Development/Backup)
 
 **Pros:**
 - Free
@@ -47,7 +86,7 @@ The email system is now enabled! Here's how to configure it.
 
 ---
 
-#### Option B: SendGrid (Recommended for Production)
+#### Option C: SendGrid (Alternative for Production)
 
 **Pros:**
 - 100 free emails/day
@@ -76,7 +115,7 @@ The email system is now enabled! Here's how to configure it.
 
 ---
 
-#### Option C: Mailgun (Alternative)
+#### Option D: Mailgun (Alternative)
 
 **Pros:**
 - 5,000 free emails/month

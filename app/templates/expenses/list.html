@@ -31,6 +31,7 @@
                     <th>Category</th>
                     <th>Description</th>
                     <th>Amount</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,10 +43,25 @@
                     </td>
                     <td data-label="Description">{{ expense.description or '—' }}</td>
                     <td data-label="Amount" class="num-cell">Rs {{ '{:,.0f}'.format(expense.amount|float) }}</td>
+                    <td data-label="Actions" style="white-space:nowrap;">
+                        <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}"
+                           class="btn btn-outline btn-sm" title="Edit this expense">
+                            <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('expenses.delete_expense', expense_id=expense.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline btn-sm"
+                                    style="color:var(--cashout);border-color:var(--cashout);"
+                                    title="Delete this expense"
+                                    onclick="return confirm('Delete this expense? Its linked cashbook entry will be removed and balances recalculated.')">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                            </button>
+                        </form>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="text-align:center; padding:32px; color:var(--ink-faint);">
+                    <td colspan="5" style="text-align:center; padding:32px; color:var(--ink-faint);">
                         No expenses recorded yet. <a href="{{ url_for('expenses.add_expense') }}" style="color:var(--ledger); font-weight:600;">Add one</a>
                     </td>
                 </tr>

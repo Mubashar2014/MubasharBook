@@ -245,7 +245,7 @@ calculate_savings(plan)
 ## Contact
 
 **Questions about pricing?**
-- Email: support@mubasharkhata.com
+- Email: info@mubasharkhata.com
 - WhatsApp: [Coming soon]
 - Reply to any automated email
 

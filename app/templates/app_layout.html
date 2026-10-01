@@ -45,6 +45,9 @@
         <a class="side-link {% if request.endpoint and request.endpoint.startswith('main.settings') %}active{% endif %}" href="{{ url_for('main.settings') }}">
             <span class="ic"><i data-lucide="settings" style="width:18px;height:18px;"></i></span> Settings
         </a>
+        <a class="side-link" href="{{ url_for('auth.logout') }}">
+            <span class="ic"><i data-lucide="log-out" style="width:18px;height:18px;"></i></span> Logout
+        </a>
     </aside>
 
     <!-- Main content -->
