@@ -289,6 +289,9 @@ def extend_trial(user_id):
     )
     
     db.session.commit()
+
+    from app.utils.email import send_trial_extended_email
+    send_trial_extended_email(user, days, user.trial_end)
     flash(f'Trial extended by {days} days.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -347,6 +350,16 @@ def activate_subscription(user_id):
     )
     
     db.session.commit()
+
+    from app.utils.email import send_package_allotted_email
+    send_package_allotted_email(
+        user,
+        plan=subscription.plan,
+        duration_text='1 month',
+        period_end=subscription.current_period_end,
+        amount=amount,
+        notes=notes or None,
+    )
     flash(f'Subscription activated successfully. Rs {amount:,.0f} payment recorded.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -428,7 +441,15 @@ def quick_activate_subscription(user_id):
     )
     
     db.session.commit()
-    
+
+    from app.utils.email import send_package_allotted_email
+    send_package_allotted_email(
+        user,
+        plan=plan,
+        duration_text=duration_text,
+        period_end=subscription.current_period_end,
+        notes=notes or None,
+    )
     flash(f'✅ Subscription activated! {plan.title()} plan for {duration_text}. Expires: {subscription.current_period_end.strftime("%Y-%m-%d")}', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -504,7 +525,9 @@ def test_email():
         send_verification_email, 
         send_welcome_email, 
         send_trial_reminder_email,
-        send_trial_expired_email
+        send_trial_expired_email,
+        send_trial_extended_email,
+        send_package_allotted_email
     )
     
     if request.method == 'POST':
@@ -534,6 +557,17 @@ def test_email():
             success = send_trial_reminder_email(user, 1)
         elif email_type == 'trial_expired':
             success = send_trial_expired_email(user)
+        elif email_type == 'trial_extended':
+            trial_end = user.trial_end or datetime.utcnow()
+            success = send_trial_extended_email(user, 7, trial_end + timedelta(days=7))
+        elif email_type == 'package_allotted':
+            subscription = user.shop.subscription if user.shop else None
+            success = send_package_allotted_email(
+                user,
+                plan=subscription.plan if subscription else 'basic',
+                duration_text='1 month',
+                period_end=datetime.utcnow() + timedelta(days=30),
+            )
         else:
             flash('Invalid email type.', 'danger')
             return redirect(url_for('admin.test_email'))

@@ -166,3 +166,124 @@ def test_missing_template_marks_log_failed(app, test_user):
     log = EmailLog.query.order_by(EmailLog.id.desc()).first()
     assert log.status == 'failed'
     assert 'does_not_exist' in log.error_message
+
+
+# ── admin-triggered notifications: trial extended / package allotted ──
+
+
+def test_trial_extended_email_renders_days_and_new_end(app, test_user):
+    from datetime import datetime, timedelta
+
+    end = datetime.utcnow() + timedelta(days=14)
+    html = render_template(
+        'emails/trial_extended.html',
+        user=test_user,
+        days=7,
+        trial_end=end,
+        dashboard_url=f"{app.config['BASE_URL']}/dashboard",
+        logo_url=f"{app.config['BASE_URL']}/static/img/logo-light.png",
+    )
+    assert 'Trial extended!' in html
+    assert '7 days' in html
+    assert end.strftime('%d %B %Y') in html
+    assert test_user.owner_name in html
+
+
+def test_package_allotted_email_renders_details_and_optional_rows(app, test_user):
+    from datetime import datetime, timedelta
+
+    end = datetime.utcnow() + timedelta(days=30)
+    base = dict(
+        user=test_user,
+        plan='premium',
+        duration_text='1 month',
+        period_end=end,
+        dashboard_url=f"{app.config['BASE_URL']}/dashboard",
+        logo_url=f"{app.config['BASE_URL']}/static/img/logo-light.png",
+    )
+
+    html = render_template('emails/package_allotted.html', amount=1500,
+                           notes='bank slip received', **base)
+    assert 'Premium plan activated!' in html
+    assert '1 month' in html
+    assert end.strftime('%d %B %Y') in html
+    assert 'Rs 1,500' in html
+    assert 'bank slip received' in html
+
+    html = render_template('emails/package_allotted.html', **base)  # quick-activate: no amount
+    assert 'Rs 1,500' not in html
+    assert 'bank slip received' not in html
+    assert 'Amount' not in html
+
+
+def test_send_trial_extended_email_logs_user_and_admin_copy(app, test_user):
+    from datetime import datetime, timedelta
+
+    from app.models.user import User
+    from app.utils.email import send_trial_extended_email
+
+    admin = User(
+        owner_name='Copy Admin', phone='03009990001',
+        email='copyadmin@test.com', language='en',
+        is_admin=True, is_verified=True,
+    )
+    admin.set_password('password123')
+    db.session.add(admin)
+    db.session.commit()
+
+    with app.app_context():
+        assert send_trial_extended_email(
+            test_user, 3, datetime.utcnow() + timedelta(days=3),
+        ) is True
+
+    logs = EmailLog.query.filter_by(email_type='trial_extended') \
+        .order_by(EmailLog.id).all()
+    assert [log.recipient_email for log in logs] == [test_user.email, 'copyadmin@test.com']
+    assert all(log.status == 'sent' for log in logs)
+    assert logs[1].user_id == admin.id
+
+
+def test_admin_copy_skips_primary_when_primary_is_admin(app, test_user):
+    from datetime import datetime, timedelta
+
+    from app.utils.email import send_package_allotted_email
+
+    test_user.is_admin = True
+    db.session.commit()
+
+    with app.app_context():
+        assert send_package_allotted_email(
+            test_user,
+            plan='basic',
+            duration_text='1 month',
+            period_end=datetime.utcnow() + timedelta(days=30),
+        ) is True
+
+    logs = EmailLog.query.filter_by(email_type='package_allotted').all()
+    assert len(logs) == 1                      # no self-copy
+    assert logs[0].recipient_email == test_user.email
+
+
+def test_test_email_panel_sends_new_notification_types(app, test_user):
+    test_user.is_admin = True
+    db.session.commit()
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(test_user.id)
+
+    # Both new dropdown options must render and send
+    page = client.get('/admin/test-email').get_data(as_text=True)
+    assert 'value="trial_extended"' in page
+    assert 'value="package_allotted"' in page
+
+    for email_type in ('trial_extended', 'package_allotted'):
+        resp = client.post('/admin/test-email', data={
+            'user_id': test_user.id,
+            'email_type': email_type,
+        }, follow_redirects=True)
+        page = resp.get_data(as_text=True)
+        assert 'Failed to send email' not in page
+        assert f'Test email sent successfully to {test_user.email}' in page
+
+    assert EmailLog.query.filter_by(email_type='trial_extended').count() == 1
+    assert EmailLog.query.filter_by(email_type='package_allotted').count() == 1

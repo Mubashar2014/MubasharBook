@@ -276,3 +276,74 @@ def test_payment_instructions_uses_config_and_local_qr(logged_in_client, app):
     assert '03129347067' in html               # config number rendered
     assert 'Malik Muhammad Mubashar Waheed' in html
     assert '03490111739' in html
+
+
+# ── NOTIFICATION EMAILS (trial extended / package allotted) ──
+
+
+def _sent_logs(email_type):
+    from app.models.email_log import EmailLog
+    return EmailLog.query.filter_by(email_type=email_type).order_by(EmailLog.id).all()
+
+
+def test_extend_trial_emails_user_and_admin_copies(admin_client, app):
+    victim, shop, sub = make_user('Extend Target', '03001110020')
+    make_user('Copy Admin', '03001110021', is_admin=True)
+    before = victim.trial_end
+
+    resp = admin_client.post(f'/admin/user/{victim.id}/extend-trial',
+                             data={'days': '7'}, follow_redirects=False)
+    assert resp.status_code == 302
+
+    logs = _sent_logs('trial_extended')
+    recipients = {log.recipient_email for log in logs}
+    assert len(logs) == 3                       # victim + both admins as copies
+    assert victim.email in recipients
+    assert '03001110021@activate.test' in recipients
+    assert 'testuser@test.com' in recipients    # acting admin (admin_client)
+    assert all(log.status == 'sent' and log.error_message is None for log in logs)
+
+    db.session.refresh(victim)
+    assert abs((victim.trial_end - (before + timedelta(days=7))).total_seconds()) < 60
+
+
+def test_quick_activate_sends_package_allotted_email(admin_client, app):
+    victim, shop, sub = make_user('Package Target', '03001110022')
+    make_user('Copy Admin B', '03001110023', is_admin=True)
+
+    resp = activate(admin_client, victim.id, plan='premium', duration='1',
+                    notes='welcome gift')
+    assert resp.status_code == 302
+
+    logs = _sent_logs('package_allotted')
+    recipients = {log.recipient_email for log in logs}
+    assert len(logs) == 3
+    assert victim.email in recipients
+    assert '03001110023@activate.test' in recipients
+    assert all(log.status == 'sent' and log.error_message is None for log in logs)
+
+    db.session.refresh(sub)
+    assert sub.status == 'active'
+    assert sub.plan == 'premium'
+
+
+def test_manual_activate_sends_package_allotted_email(admin_client, app):
+    victim, shop, sub = make_user('Manual Target', '03001110024')
+
+    resp = admin_client.post(f'/admin/user/{victim.id}/activate-subscription',
+                             data={'amount': '1500',
+                                   'payment_method': 'bank_transfer',
+                                   'notes': 'bank slip received'},
+                             follow_redirects=False)
+    assert resp.status_code == 302
+
+    logs = _sent_logs('package_allotted')
+    assert len(logs) == 2                       # victim + acting admin
+    assert logs[0].recipient_email == victim.email
+    assert all(log.status == 'sent' and log.error_message is None for log in logs)
+
+    db.session.refresh(sub)
+    assert sub.status == 'active'
+    payment = Payment.query.filter_by(user_id=victim.id).first()
+    assert payment is not None
+    assert payment.amount == 1500

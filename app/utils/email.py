@@ -202,3 +202,72 @@ def send_payment_rejected_email(user, payment, reason):
         reason=reason,
         subscribe_url=f"{current_app.config.get('BASE_URL', 'http://localhost:5050')}/subscription/subscribe"
     )
+
+
+def _send_admin_copies(primary_user, subject, template, email_type, **kwargs):
+    """Send a copy of an admin-triggered email to every admin account.
+
+    Each copy is its own send with its own EmailLog row. Never raises: a
+    copy failing must not break the primary send or the admin request.
+    """
+    from app.models.user import User
+
+    try:
+        for admin in User.query.filter_by(is_admin=True).all():
+            if admin.id == primary_user.id or not admin.email:
+                continue
+            send_email(
+                to=admin.email,
+                subject=subject,
+                template=template,
+                email_type=email_type,
+                user_id=admin.id,
+                **kwargs,
+            )
+    except Exception as exc:
+        current_app.logger.error(f'Admin copy failed for {email_type}: {exc}')
+
+
+def send_trial_extended_email(user, days, trial_end):
+    """Notify user (and admins) that an admin extended the trial."""
+    subject = 'Your trial has been extended — Mubashar Khata'
+    kwargs = dict(
+        user=user,
+        days=days,
+        trial_end=trial_end,
+        dashboard_url=f"{current_app.config.get('BASE_URL', 'http://localhost:5050')}/dashboard",
+    )
+    sent = send_email(
+        to=user.email,
+        subject=subject,
+        template='trial_extended',
+        email_type='trial_extended',
+        user_id=user.id,
+        **kwargs,
+    )
+    _send_admin_copies(user, subject, 'trial_extended', 'trial_extended', **kwargs)
+    return sent
+
+
+def send_package_allotted_email(user, plan, duration_text, period_end, amount=None, notes=None):
+    """Notify user (and admins) that a package/plan was allotted."""
+    subject = f'{plan.title()} plan activated — Mubashar Khata'
+    kwargs = dict(
+        user=user,
+        plan=plan,
+        duration_text=duration_text,
+        period_end=period_end,
+        amount=amount,
+        notes=notes,
+        dashboard_url=f"{current_app.config.get('BASE_URL', 'http://localhost:5050')}/dashboard",
+    )
+    sent = send_email(
+        to=user.email,
+        subject=subject,
+        template='package_allotted',
+        email_type='package_allotted',
+        user_id=user.id,
+        **kwargs,
+    )
+    _send_admin_copies(user, subject, 'package_allotted', 'package_allotted', **kwargs)
+    return sent

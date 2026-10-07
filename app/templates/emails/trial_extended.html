@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your trial has been extended</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1C1B19; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #F7F3E8; border-radius: 16px; padding: 40px; border: 1px solid #DDD4B8;">
+        <div style="text-align: center; margin-bottom: 32px;">
+            <img src="{{ logo_url }}" alt="Mubashar Khata" width="196" height="61" style="display:block; width:196px; height:auto; margin:0 auto 16px;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: #2E5941; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px;">⏳</div>
+            <h1 style="font-family: 'Fraunces', serif; font-size: 28px; margin: 0; color: #1C1B19;">Trial extended!</h1>
+            <p style="color: #5A5748; margin-top: 8px; font-size: 16px;">{{ days }} more day{{ 's' if days > 1 else '' }} added to your free trial</p>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="color: #5A5748; margin: 0 0 16px;">Hi {{ user.owner_name }},</p>
+            <p style="color: #5A5748; margin: 0 0 16px;">Good news! Your trial period on <strong>Mubashar Khata</strong> has been extended. Here are the details:</p>
+
+            <table style="width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #DDD4B8; border-radius: 8px; overflow: hidden;">
+                <tr>
+                    <td style="padding: 12px 16px; color: #666; border-bottom: 1px solid #F0EBDD;">Days Added</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 600; border-bottom: 1px solid #F0EBDD;">{{ days }} day{{ 's' if days > 1 else '' }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 16px; color: #666; border-bottom: 1px solid #F0EBDD;">New Trial Ends</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 600; border-bottom: 1px solid #F0EBDD;">{{ trial_end.strftime('%d %B %Y') if trial_end else 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 16px; color: #666;">Status</td>
+                    <td style="padding: 12px 16px; text-align: right;"><span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">✅ Trial Active</span></td>
+                </tr>
+            </table>
+
+            <p style="color: #5A5748; margin: 20px 0 0;">You now have extra time to explore every feature. Make the most of it!</p>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+            <a href="{{ dashboard_url }}" style="display: inline-block; background: #2E5941; color: #fff; padding: 16px 36px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 16px; box-shadow: 0 4px 12px rgba(46,89,65,0.3);">
+                Go to Dashboard
+            </a>
+        </div>
+
+        <div style="background: #FFFDF6; border: 1px solid #DDD4B8; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+            <p style="margin: 0; color: #5A5748; font-size: 14px;">Need help or have questions?</p>
+            <p style="margin: 8px 0 0; color: #8A8578; font-size: 13px;">Reply to this email and we'll assist you.</p>
+        </div>
+
+        <div style="text-align: center; color: #8A8578; font-size: 12px; border-top: 1px solid #DDD4B8; padding-top: 20px;">
+            <p style="margin: 0 0 8px;">© 2026 Mubashar Khata</p>
+            <p style="margin: 0;">Manage your shop's finances with ease.</p>
+        </div>
+    </div>
+</body>
+</html>
