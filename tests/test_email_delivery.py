@@ -287,3 +287,36 @@ def test_test_email_panel_sends_new_notification_types(app, test_user):
 
     assert EmailLog.query.filter_by(email_type='trial_extended').count() == 1
     assert EmailLog.query.filter_by(email_type='package_allotted').count() == 1
+
+
+def test_verification_email_copies_admin_without_cascade(client, app):
+    """Every email now copies admins (send_email-level); copies must not
+    cascade to other admins' copies."""
+    from app.models.user import User
+
+    admin = User(
+        owner_name='All Mail Admin', phone='03009990002',
+        email='alldomainadmin@test.com', language='en',
+        is_admin=True, is_verified=True,
+    )
+    admin.set_password('password123')
+    db.session.add(admin)
+    db.session.commit()
+
+    resp = client.post('/auth/signup', data={
+        'owner_name': 'Copy Target',
+        'phone': '03009990003',
+        'email': 'copytarget@test.com',
+        'password': 'secure123',
+        'confirm_password': 'secure123',
+        'language': 'en',
+        'shop_name': 'Copy Shop',
+        'total_investment': '1000',
+    }, follow_redirects=True)
+    assert 'Account created' in resp.get_data(as_text=True)
+
+    logs = EmailLog.query.filter_by(email_type='verification') \
+        .order_by(EmailLog.id).all()
+    recipients = sorted(log.recipient_email for log in logs)
+    assert recipients == ['alldomainadmin@test.com', 'copytarget@test.com']
+    assert all(log.status == 'sent' for log in logs)

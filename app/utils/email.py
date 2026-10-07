@@ -33,8 +33,13 @@ def _record_log_result(email_log_id, sent, error=None):
         current_app.logger.error(f'Could not record email log {email_log_id}: {exc}')
 
 
-def send_email(to, subject, template, email_type='general', user_id=None, **kwargs):
-    """Send an email using Flask-Mail with logging."""
+def send_email(to, subject, template, email_type='general', user_id=None,
+               admin_copies=True, **kwargs):
+    """Send an email using Flask-Mail with logging.
+
+    Every send also delivers a copy to each admin account (admin_copies=True,
+    the default) — copies themselves never cascade further (admin_copies=False).
+    """
     from app.models.email_log import EmailLog
 
     html_content = None
@@ -89,6 +94,10 @@ def send_email(to, subject, template, email_type='general', user_id=None, **kwar
             current_app.logger.error(f'Failed to send email to {to}: {e}')
 
     _record_log_result(log_id, sent, error)
+
+    if admin_copies and sent:
+        _send_admin_copies(to, subject, template, email_type, **kwargs)
+
     return sent
 
 
@@ -204,17 +213,25 @@ def send_payment_rejected_email(user, payment, reason):
     )
 
 
-def _send_admin_copies(primary_user, subject, template, email_type, **kwargs):
-    """Send a copy of an admin-triggered email to every admin account.
+def _send_admin_copies(primary_to, subject, template, email_type, **kwargs):
+    """Send a copy of every outgoing email to each admin account.
 
-    Each copy is its own send with its own EmailLog row. Never raises: a
-    copy failing must not break the primary send or the admin request.
+    Deduplicates against the primary recipient by address; each copy is its
+    own send with its own EmailLog row and admin_copies=False so copies never
+    cascade. Never raises: a copy failing must not break the primary send.
     """
     from app.models.user import User
 
     try:
+        primary = (primary_to or '').lower()
         for admin in User.query.filter_by(is_admin=True).all():
-            if admin.id == primary_user.id or not admin.email:
+            if not admin.email:
+                current_app.logger.warning(
+                    f'Admin copy skipped for {email_type}: '
+                    f'user {admin.id} ({admin.owner_name}) has no email address'
+                )
+                continue
+            if admin.email.lower() == primary:
                 continue
             send_email(
                 to=admin.email,
@@ -222,6 +239,7 @@ def _send_admin_copies(primary_user, subject, template, email_type, **kwargs):
                 template=template,
                 email_type=email_type,
                 user_id=admin.id,
+                admin_copies=False,
                 **kwargs,
             )
     except Exception as exc:
@@ -245,7 +263,6 @@ def send_trial_extended_email(user, days, trial_end):
         user_id=user.id,
         **kwargs,
     )
-    _send_admin_copies(user, subject, 'trial_extended', 'trial_extended', **kwargs)
     return sent
 
 
@@ -269,5 +286,4 @@ def send_package_allotted_email(user, plan, duration_text, period_end, amount=No
         user_id=user.id,
         **kwargs,
     )
-    _send_admin_copies(user, subject, 'package_allotted', 'package_allotted', **kwargs)
     return sent

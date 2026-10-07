@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     owner_name = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    phone = db.Column(db.String(20), unique=True, nullable=True, index=True)
     email = db.Column(db.String(120), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     language = db.Column(db.String(5), default='ur')  # 'en' or 'ur'

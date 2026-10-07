@@ -154,3 +154,29 @@ def test_protected_route_requires_login(client):
 def test_protected_route_accessible_when_logged_in(logged_in_client):
     resp = logged_in_client.get('/dashboard', follow_redirects=False)
     assert resp.status_code == 200
+
+def test_signup_blank_phone_can_be_used_twice(client, app):
+    """Regression: phone is Optional in the form but the column used to be
+    NOT NULL UNIQUE — the first blank phone took the single '' slot, so every
+    later blank-phone signup died with the generic 'Could not create' error."""
+    for i in (1, 2):
+        resp = client.post('/auth/signup', data={
+            'owner_name': f'No Phone {i}',
+            'phone': '',
+            'email': f'nophone{i}@example.com',
+            'password': 'secure123',
+            'confirm_password': 'secure123',
+            'language': 'en',
+            'shop_name': f'NoPhone Shop {i}',
+            'total_investment': '1000',
+        }, follow_redirects=True)
+        html = resp.get_data(as_text=True)
+        assert 'Could not create your account' not in html, f'attempt {i} failed'
+        assert 'Account created' in html, f'attempt {i}: {html[:200]}'
+
+    with app.app_context():
+        users = User.query.filter(
+            User.email.in_(['nophone1@example.com', 'nophone2@example.com'])
+        ).all()
+        assert len(users) == 2
+        assert all(u.phone is None for u in users)

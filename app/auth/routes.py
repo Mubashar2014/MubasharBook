@@ -44,7 +44,7 @@ def signup():
 
     form = SignupForm()
     if form.validate_on_submit():
-        phone = (form.phone.data or '').strip()
+        phone = (form.phone.data or '').strip() or None
         email = form.email.data.strip().lower()
 
         existing = _existing_account(phone, email)
@@ -97,6 +97,9 @@ def signup():
         except IntegrityError:
             # The pre-check above misses races and MySQL's trailing-space
             # comparison — the unique index is the real gate. Never 500 here.
+            current_app.logger.exception(
+                f'Signup IntegrityError for phone={phone!r} email={email!r}'
+            )
             db.session.rollback()
             if phone and User.query.filter_by(phone=phone).first():
                 flash('This phone number is already registered. Please log in.', 'warning')
