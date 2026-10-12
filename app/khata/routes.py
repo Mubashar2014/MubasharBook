@@ -1,4 +1,5 @@
 from datetime import date
+from urllib.parse import unquote
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from app.khata import khata_bp
@@ -67,6 +68,9 @@ def list_khata():
 @khata_bp.route('/party/<party_name>')
 @login_required
 def party_detail(party_name):
+    # LiteSpeed passes PATH_INFO still percent-encoded (e.g. %20 for spaces)
+    # while Werkzeug routing does not decode it — decode defensively.
+    party_name = unquote(party_name)
     shop = get_user_shop()
     entries = KhataEntry.query.filter_by(
         shop_id=shop.id, party_name=party_name
@@ -156,6 +160,7 @@ def settle_khata(entry_id):
 def settle_party(party_name):
     """Settle a user-entered amount (0 < amount <= pending) across the party's
     pending entries, oldest first."""
+    party_name = unquote(party_name)
     shop = get_user_shop()
 
     entries = KhataEntry.query.filter_by(

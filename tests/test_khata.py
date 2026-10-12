@@ -310,3 +310,32 @@ def test_party_detail_roundtrip_with_spaces_and_urdu_name(logged_in_client, app)
         assert entry is not None
         assert entry.status == 'pending'
         assert float(entry.settled_amount or 0) == 7500.0
+
+
+def test_party_detail_handles_raw_percent_encoded_path(logged_in_client, app):
+    """LiteSpeed passes PATH_INFO still percent-encoded — the route must decode
+    it, otherwise names with spaces never match their khata entries."""
+    _add_stock(logged_in_client, 'Raw Path Phone', 40000, 20000, 'Raw Path Supplier')
+
+    resp = logged_in_client.get(
+        '/khata/party/Raw%20Path%20Supplier',
+        environ_overrides={'PATH_INFO': '/khata/party/Raw%20Path%20Supplier'},
+    )
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'Raw Path Supplier' in html
+    assert 'id="settleAmount"' in html
+    assert 'value="20000.00"' in html
+
+    resp = logged_in_client.post(
+        '/khata/party/Raw%20Path%20Supplier/settle',
+        data={'amount': '9000'},
+        environ_overrides={'PATH_INFO': '/khata/party/Raw%20Path%20Supplier/settle'},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name='Raw Path Supplier').first()
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 9000.0
