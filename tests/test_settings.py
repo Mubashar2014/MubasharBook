@@ -264,3 +264,35 @@ def test_signup_duplicate_phone_is_caught_instead_of_500ing(client, test_user, m
     assert 'This phone number is already registered' in page
     assert User.query.filter_by(phone='03001234567').count() == 1
     assert User.query.filter_by(email='duplicate@example.com').first() is None
+
+
+def test_blank_profile_phone_stays_none_and_never_collides(
+        logged_in_client, test_user, second_user):
+    """apply_profile_update used to store '' for blank phones. After the
+    signup fix moved blanks to NULL, the first NULL-phone account saving a
+    blank profile claimed the unique '' slot and every later blank save
+    died on the phone index (500). Blank must normalize to NULL."""
+    test_user.phone = None
+    second_user.phone = None
+    db.session.commit()
+
+    resp = logged_in_client.post('/settings/profile', data={
+        'owner_name': test_user.owner_name,
+        'phone': '',
+        'language': 'en',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    db.session.refresh(test_user)
+    assert test_user.phone is None
+
+    with logged_in_client.session_transaction() as sess:
+        sess['_user_id'] = str(second_user.id)
+    resp = logged_in_client.post('/settings/profile', data={
+        'owner_name': second_user.owner_name,
+        'phone': '   ',  # whitespace-only must normalize too
+        'language': 'en',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    db.session.refresh(second_user)
+    assert second_user.phone is None
+    assert User.query.filter(User.phone == '').count() == 0

@@ -103,8 +103,8 @@ def apply_profile_update(user, owner_name, phone, language):
     if not owner_name:
         return 'Owner name cannot be empty.'
 
-    phone = (phone or '').strip()
-    if len(phone) > 20:
+    phone = (phone or '').strip() or None  # blank stays None (never '')
+    if phone and len(phone) > 20:
         return 'Phone number is too long (max 20 characters).'
     if phone and User.query.filter(User.phone == phone, User.id != user.id).first():
         return 'This phone number is already registered to another account.'
