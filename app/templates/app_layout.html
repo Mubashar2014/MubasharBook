@@ -85,6 +85,21 @@
             </div>
             {% endif %}
             {% endwith %}
+            {% if current_user.is_authenticated and not current_user.email_verified_at and not session.get('hide_verify_banner') %}
+            <div class="verify-banner">
+                <i data-lucide="mail" style="width:20px;height:20px;flex-shrink:0;"></i>
+                <span class="verify-banner-text"><strong>Verify your email</strong> &mdash; secure your account and never miss trial or payment updates.</span>
+                <form method="POST" action="{{ url_for('auth.resend_verification') }}" class="verify-banner-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="email" value="{{ current_user.email }}">
+                    <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+                    <button type="submit" class="verify-banner-btn">Resend email</button>
+                </form>
+                <a href="{{ url_for('auth.dismiss_verify_banner') }}" class="verify-banner-dismiss" title="Hide for now" aria-label="Dismiss verification notice">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </a>
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </div>
     </div>
@@ -128,6 +143,28 @@
 .flash-success { background: #EDF5F0; color: #2E5941; border: 1px solid #2E5941; }
 .flash-warning { background: #FDF8EC; color: #8A6A1E; border: 1px solid #C9A959; }
 .flash-danger { background: #FDF0EE; color: #A13D2E; border: 1px solid #A13D2E; }
+.verify-banner {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--gold-tint); color: var(--gold-deep);
+    border: 1px solid #C9A959; border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 20px;
+    font-family: 'Inter', sans-serif; font-size: 14px;
+    animation: flashIn 0.3s ease;
+}
+.verify-banner-text { flex: 1; min-width: 220px; }
+.verify-banner-form { display: inline-flex; }
+.verify-banner-btn {
+    background: var(--ink); color: var(--gold);
+    border: none; border-radius: 8px; padding: 8px 16px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+}
+.verify-banner-btn:hover { opacity: 0.9; }
+.verify-banner-dismiss {
+    display: inline-flex; align-items: center; justify-content: center;
+    color: inherit; opacity: 0.6; text-decoration: none; padding: 4px;
+}
+.verify-banner-dismiss:hover { opacity: 1; }
 .flash-info { background: #EDF5F0; color: #2E5941; border: 1px solid #DDD4B8; }
 </style>
 {% endblock %}

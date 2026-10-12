@@ -2,7 +2,7 @@ import os
 import uuid
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from flask import render_template, redirect, url_for, flash, request, current_app
+from flask import render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth_bp
 from app.auth.forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ResendVerificationForm
@@ -34,6 +34,13 @@ def _existing_account(phone, email):
             return found
     if email:
         return User.query.filter_by(email=email).first()
+    return None
+
+
+def _safe_local_url(target):
+    """Same-host relative path only (open-redirect guard), or None."""
+    if target and target.startswith('/') and not target.startswith('//'):
+        return target
     return None
 
 
@@ -109,11 +116,15 @@ def signup():
                 flash('Could not create your account. Please try again.', 'warning')
             return redirect(url_for('auth.login'))
 
-        # Send verification email
+        # Verification is soft: send the link, but let the user in right away.
         send_verification_email(user)
 
-        flash('Account created! Please check your email to verify and start your trial.', 'success')
-        return redirect(url_for('auth.verify_email', email=user.email))
+        login_user(user)
+        user.mark_login()
+        db.session.commit()
+
+        flash('Account created! We\u2019ve emailed you a verification link \u2014 you can verify any time from the banner.', 'success')
+        return redirect(url_for('main.dashboard'))
 
     return render_template('auth/signup.html', form=form)
 
@@ -126,6 +137,9 @@ def verify_email_token(token):
         return redirect(url_for('auth.verify_email'))
 
     if user.email_verified_at:
+        if current_user.is_authenticated and current_user.id == user.id:
+            flash('Email already verified.', 'info')
+            return redirect(url_for('main.dashboard'))
         flash('Email already verified. Please log in.', 'info')
         return redirect(url_for('auth.login'))
 
@@ -141,7 +155,10 @@ def verify_email_token(token):
     # Send welcome email
     send_welcome_email(user)
 
-    flash('Email verified! Your 7-day free trial has started. You can now log in.', 'success')
+    if current_user.is_authenticated and current_user.id == user.id:
+        flash('Email verified! Your account is secured. Thank you.', 'success')
+        return redirect(url_for('main.dashboard'))
+    flash('Email verified! Your 7-day free trial is running. You can now log in.', 'success')
     return redirect(url_for('auth.login'))
 
 
@@ -154,26 +171,34 @@ def verify_email():
 @auth_bp.route('/resend-verification', methods=['POST'])
 def resend_verification():
     email = request.form.get('email', '').strip().lower()
+    next_url = _safe_local_url(request.form.get('next'))
     if not email:
         flash('Email is required.', 'warning')
-        return redirect(url_for('auth.verify_email'))
+        return redirect(next_url or url_for('auth.verify_email'))
 
     user = User.query.filter_by(email=email).first()
     if not user:
         # Don't reveal if email exists
         flash('If an account exists, a verification email has been sent.', 'info')
-        return redirect(url_for('auth.verify_email', email=email))
+        return redirect(next_url or url_for('auth.verify_email', email=email))
 
     if user.email_verified_at:
-        flash('Email already verified. Please log in.', 'info')
-        return redirect(url_for('auth.login'))
+        flash('Email already verified. Thank you!', 'success')
+        return redirect(next_url or url_for('auth.login'))
 
     user.generate_verification_token()
     db.session.commit()
     send_verification_email(user)
 
     flash('Verification email sent. Please check your inbox.', 'success')
-    return redirect(url_for('auth.verify_email', email=email))
+    return redirect(next_url or url_for('auth.verify_email', email=email))
+
+
+@auth_bp.route('/dismiss-verify-banner')
+def dismiss_verify_banner():
+    """Hide the verify-email banner for the rest of this session."""
+    session['hide_verify_banner'] = 1
+    return redirect(request.referrer or url_for('main.dashboard'))
 
 
 @auth_bp.route('/forgot', methods=['GET', 'POST'])
@@ -235,11 +260,8 @@ def login():
         if user.is_admin and not user.email_verified_at:
             user.verify_email()
 
-        # Check if email is verified
-        if not user.email_verified_at:
-            flash('Please verify your email before logging in. Check your inbox.', 'warning')
-            return redirect(url_for('auth.verify_email', email=user.email))
-
+        # Verification is soft: unverified users log in normally and see a
+        # persistent "verify your email" banner instead of a wall.
         login_user(user)
         user.mark_login()
         db.session.commit()

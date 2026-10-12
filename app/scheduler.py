@@ -36,7 +36,6 @@ def check_trial_reminders():
         three_days_from_now = today + timedelta(days=3)
         users_3days = User.query.join(Shop).join(Subscription).filter(
             User.is_admin == False,
-            User.email_verified_at.isnot(None),  # Only verified users
             Subscription.status == 'trial',
             func.date(Subscription.trial_end) == three_days_from_now
         ).all()
@@ -53,7 +52,6 @@ def check_trial_reminders():
         one_day_from_now = today + timedelta(days=1)
         users_1day = User.query.join(Shop).join(Subscription).filter(
             User.is_admin == False,
-            User.email_verified_at.isnot(None),
             Subscription.status == 'trial',
             func.date(Subscription.trial_end) == one_day_from_now
         ).all()
@@ -84,7 +82,6 @@ def check_trial_expiry():
         # Find users whose trial ended today or before (but subscription still shows 'trial')
         users_expired = User.query.join(Shop).join(Subscription).filter(
             User.is_admin == False,
-            User.email_verified_at.isnot(None),
             Subscription.status == 'trial',
             func.date(Subscription.trial_end) <= today
         ).all()
