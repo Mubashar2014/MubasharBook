@@ -20,14 +20,14 @@
             {{ party_name[0] | upper }}
         </div>
         <div class="party-title">
-            <div style="font-family:var(--font-serif);font-size:22px;font-weight:600;">{{ party_name }}</div>
+            <div class="khata-name" dir="auto">{{ party_name }}</div>
             <div style="font-size:13px;color:var(--ink-faint);margin-top:2px;">
                 {% if entry_type == 'receivable' %}Customer — owes us money{% else %}Supplier — we owe them money{% endif %}
             </div>
         </div>
         <div class="party-total">
             <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Pending</div>
-            <div style="font-family:var(--font-serif);font-size:28px;font-weight:700;{% if entry_type == 'receivable' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}">
+            <div style="font-family:var(--font-serif);font-size:28px;font-weight:700;{% if entry_type == 'receivable' %}color:var(--cashin);{% else %}color:var(--cashout);{% endif %}" dir="ltr">
                 Rs {{ "{:,.0f}".format(total_pending) }}
             </div>
         </div>
@@ -36,8 +36,41 @@
             <i data-lucide="message-circle" style="width:16px;height:16px;"></i> Send reminder
         </a>
         {% endif %}
+        {% if total_pending > 0 %}
+        <form method="POST" action="{{ url_for('khata.settle_party', party_name=party_name) }}" class="party-settle" onsubmit="return validateSettle();">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="settle-field">
+                <span>Rs</span>
+                <input type="number" name="amount" id="settleAmount"
+                       value="{{ '%.2f'|format(total_pending) }}"
+                       min="0.01" step="0.01" max="{{ '%.2f'|format(total_pending) }}"
+                       inputmode="decimal" aria-label="Amount to settle (max Rs {{ '{:,.0f}'.format(total_pending) }})">
+            </div>
+            <button type="submit" class="btn btn-primary" title="Settle this amount — added to cashbook">
+                <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Settle
+            </button>
+        </form>
+        {% endif %}
     </div>
 </div>
+<script>
+function validateSettle() {
+    var inp = document.getElementById('settleAmount');
+    var val = parseFloat(inp.value);
+    var max = parseFloat(inp.max);
+    if (isNaN(val) || val <= 0) {
+        alert('Enter an amount greater than 0.');
+        inp.focus();
+        return false;
+    }
+    if (val > max + 0.001) {
+        alert('Amount cannot exceed the pending Rs ' + max.toLocaleString() + '.');
+        inp.focus();
+        return false;
+    }
+    return true;
+}
+</script>
 
 <!-- Pending Entries -->
 {% if pending_entries %}
@@ -68,7 +101,7 @@
                         <td data-label="Action">
                             <form method="POST" action="{{ url_for('khata.settle_khata', entry_id=entry.id) }}" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Settle this entry? Rs {{ '{:,.0f}'.format((entry.amount - (entry.settled_amount or 0))|float) }} will be added to cashbook.')">
+                                <button type="submit" class="btn btn-primary btn-sm" title="Settle Rs {{ '{:,.0f}'.format((entry.amount - (entry.settled_amount or 0))|float) }} — added to cashbook">
                                     <i data-lucide="check-circle" style="width:14px;height:14px;"></i> Settle
                                 </button>
                             </form>

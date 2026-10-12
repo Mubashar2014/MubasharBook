@@ -423,7 +423,7 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
     border-bottom: 1px solid #DDD4B8;
     box-shadow: 0 1px 3px rgba(28,27,25,0.06);
 }
-.topbar-title h1 { font-family: 'Fraunces', serif; font-size: 20px; margin: 0; }
+.topbar-title h1 { font-family: 'Fraunces', serif; font-size: 20px; margin: 0; overflow-wrap: anywhere; word-break: break-word; }
 .topbar-title .path { font-family: 'Inter', sans-serif; font-size: 12px; color: #8A8578; margin-top: 2px; }
 .topbar-left { display: flex; align-items: center; gap: 12px; }
 .topbar-badge {
@@ -969,9 +969,29 @@ button { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; cu
 .party-title { flex: 1; min-width: 0; }
 .party-total { text-align: right; flex-shrink: 0; }
 .party-remind { flex-shrink: 0; }
+.khata-name { overflow-wrap: anywhere; word-break: break-word; }
+.party-title .khata-name { font-family: var(--font-serif); font-size: 22px; font-weight: 600; line-height: 1.25; }
+.party-who .khata-name { font-weight: 600; font-size: 15px; color: var(--ink); }
+
+/* Inline settle box (amount input + Settle button, next to Send reminder) */
+.party-settle { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.party-settle .settle-field {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: var(--radius); padding: 7px 10px;
+}
+.party-settle .settle-field span { font-size: 13px; color: var(--ink-faint); font-weight: 700; }
+.party-settle input {
+    width: 108px; border: 0; outline: 0; background: transparent;
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink);
+}
+.party-settle input::-webkit-outer-spin-button,
+.party-settle input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.party-settle input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 @media (max-width: 640px) {
     .party-head { flex-wrap: wrap; }
     .party-title { flex: 1 1 calc(100% - 72px); }
     .party-total { text-align: left; }
     .party-remind { margin-left: auto; }
+    .party-settle { margin-left: auto; width: 100%; justify-content: flex-end; }
 }

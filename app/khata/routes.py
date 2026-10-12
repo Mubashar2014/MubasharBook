@@ -149,3 +149,84 @@ def settle_khata(entry_id):
             return redirect(url_for('stock.receipt', item_id=item.id, type=rtype, settled=1))
 
     return redirect(url_for('khata.party_detail', party_name=entry.party_name))
+
+
+@khata_bp.route('/party/<party_name>/settle', methods=['POST'])
+@login_required
+def settle_party(party_name):
+    """Settle a user-entered amount (0 < amount <= pending) across the party's
+    pending entries, oldest first."""
+    shop = get_user_shop()
+
+    entries = KhataEntry.query.filter_by(
+        shop_id=shop.id, party_name=party_name, status='pending'
+    ).order_by(KhataEntry.entry_date.asc(), KhataEntry.id.asc()).all()
+
+    if not entries:
+        flash('No pending entries to settle for this party.', 'warning')
+        return redirect(url_for('khata.party_detail', party_name=party_name))
+
+    total_pending = sum(float(e.amount) - float(e.settled_amount or 0) for e in entries)
+
+    raw_amount = (request.form.get('amount') or '').strip().replace(',', '')
+    try:
+        amount = round(float(raw_amount), 2)
+    except (TypeError, ValueError):
+        amount = 0.0
+
+    if amount <= 0:
+        flash('Enter an amount greater than 0.', 'danger')
+        return redirect(url_for('khata.party_detail', party_name=party_name))
+
+    if amount > total_pending + 0.005:
+        flash(f'Amount cannot exceed the pending Rs {total_pending:,.0f}.', 'danger')
+        return redirect(url_for('khata.party_detail', party_name=party_name))
+
+    ensure_opening_cash(shop)
+    prev = CashEntry.query.filter_by(shop_id=shop.id).order_by(CashEntry.id.desc()).first()
+    balance = float(prev.balance_after) if prev and prev.balance_after else float(shop.initial_investment or 0)
+
+    remaining = amount
+    settled_count = 0
+    for e in entries:
+        if remaining <= 0.005:
+            break
+        entry_pending = float(e.amount) - float(e.settled_amount or 0)
+        if entry_pending <= 0:
+            continue
+        take = round(min(entry_pending, remaining), 2)
+
+        if e.entry_type == 'receivable':
+            cash_type = 'in'
+            desc = f"Khata settled: {e.party_name} — {e.description}"
+            balance += take
+        else:
+            cash_type = 'out'
+            desc = f"Khata settled: paid to {e.party_name} — {e.description}"
+            balance -= take
+
+        cash = CashEntry(
+            shop_id=shop.id,
+            entry_type=cash_type,
+            amount=take,
+            description=desc,
+            entry_date=date.today(),
+            linked_stock_id=e.linked_stock_id,
+            balance_after=balance,
+        )
+        db.session.add(cash)
+        db.session.flush()
+
+        e.settled_amount = float(e.settled_amount or 0) + take
+        e.settled_cash_entry_id = cash.id
+        if float(e.settled_amount) >= float(e.amount) - 0.005:
+            e.status = 'settled'
+            e.settled_date = date.today()
+
+        remaining = round(remaining - take, 2)
+        settled_count += 1
+
+    db.session.commit()
+
+    flash(f'Rs {amount:,.0f} settled for {party_name} — added to cashbook.', 'success')
+    return redirect(url_for('khata.party_detail', party_name=party_name))

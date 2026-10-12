@@ -150,3 +150,163 @@ def test_khata_type_filter_hides_other_section(logged_in_client):
     assert 'Customers with pending payments' in html
     assert 'Suppliers with pending payments' in html
     assert 'Show all' not in html
+
+
+# ── Inline settlement flow (custom amount, no confirm, Urdu/space names) ──
+
+from urllib.parse import quote  # noqa: E402
+import re  # noqa: E402
+
+
+def test_party_page_shows_inline_settle_form(logged_in_client):
+    _add_stock(logged_in_client, 'Inline Settle Phone', 40000, 20000, 'Inline Supplier')
+
+    resp = logged_in_client.get('/khata/party/Inline Supplier')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'id="settleAmount"' in html
+    assert 'value="20000.00"' in html
+    assert 'max="20000.00"' in html
+    assert 'validateSettle' in html
+    assert 'onclick="return confirm' not in html
+    assert 'khata-name' in html
+    assert 'dir="auto"' in html
+
+
+def test_settle_party_partial_amount(logged_in_client, app):
+    _add_stock(logged_in_client, 'Partial Phone', 40000, 20000, 'Partial Supplier')
+
+    resp = logged_in_client.post(
+        '/khata/party/Partial Supplier/settle',
+        data={'amount': '5000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name='Partial Supplier').first()
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 5000.0
+        cash = CashEntry.query.filter(
+            CashEntry.description.like('Khata settled%Partial Supplier%')
+        ).first()
+        assert cash is not None
+        assert cash.entry_type == 'out'
+        assert float(cash.amount) == 5000.0
+
+    resp = logged_in_client.get('/khata/party/Partial Supplier')
+    html = resp.get_data(as_text=True)
+    assert '15000' in html  # remaining pending shown
+    assert 'value="15000.00"' in html
+
+
+def test_settle_party_full_amount_marks_settled(logged_in_client, app):
+    _add_stock(logged_in_client, 'Full Party Phone', 40000, 20000, 'Full Party Supplier')
+
+    resp = logged_in_client.post(
+        '/khata/party/Full Party Supplier/settle',
+        data={'amount': '20000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name='Full Party Supplier').first()
+        assert entry.status == 'settled'
+        assert entry.settled_date is not None
+        assert float(entry.settled_amount) == 20000.0
+
+
+def test_settle_party_rejects_invalid_amounts(logged_in_client, app):
+    _add_stock(logged_in_client, 'Reject Phone', 40000, 20000, 'Reject Supplier')
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name='Reject Supplier').first()
+        entry_id = entry.id
+
+    for bad in ('0', '-100', '20001', 'abc', ''):
+        resp = logged_in_client.post(
+            '/khata/party/Reject Supplier/settle',
+            data={'amount': bad}, follow_redirects=False,
+        )
+        assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.get(entry_id)
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 0.0
+        assert CashEntry.query.filter(
+            CashEntry.description.like('Khata settled%Reject Supplier%')
+        ).count() == 0
+
+
+def test_settle_party_amount_with_commas_accepted(logged_in_client, app):
+    _add_stock(logged_in_client, 'Comma Phone', 40000, 20000, 'Comma Supplier')
+
+    resp = logged_in_client.post(
+        '/khata/party/Comma Supplier/settle',
+        data={'amount': '5,000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name='Comma Supplier').first()
+        assert float(entry.settled_amount or 0) == 5000.0
+
+
+def test_settle_party_fifo_across_multiple_entries(logged_in_client, app):
+    _add_stock(logged_in_client, 'Fifo Phone A', 60000, 40000, 'Fifo Supplier')
+    _add_stock(logged_in_client, 'Fifo Phone B', 50000, 30000, 'Fifo Supplier')
+
+    resp = logged_in_client.post(
+        '/khata/party/Fifo Supplier/settle',
+        data={'amount': '25000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entries = KhataEntry.query.filter_by(party_name='Fifo Supplier').order_by(
+            KhataEntry.id.asc()
+        ).all()
+        assert len(entries) == 2
+        # Oldest entry fully settled first
+        assert entries[0].status == 'settled'
+        assert float(entries[0].settled_amount) == 20000.0
+        # Remainder applied to second entry (partial)
+        assert entries[1].status == 'pending'
+        assert float(entries[1].settled_amount or 0) == 5000.0
+
+        cash_total = sum(
+            float(c.amount) for c in CashEntry.query.filter(
+                CashEntry.description.like('Khata settled%Fifo Supplier%')
+            )
+        )
+        assert cash_total == 25000.0
+
+
+def test_party_detail_roundtrip_with_spaces_and_urdu_name(logged_in_client, app):
+    urdu_name = 'کاشف عباس احمد'
+    _add_stock(logged_in_client, 'Urdu Phone', 40000, 20000, urdu_name)
+
+    # Link on list page opens the party despite spaces + Urdu characters
+    list_resp = logged_in_client.get('/khata/')
+    list_html = list_resp.get_data(as_text=True)
+    m = re.search(r'href="([^"]*)" class="party-open"', list_html)
+    assert m, 'party-open link missing on khata list'
+    page = logged_in_client.get(m.group(1))
+    assert page.status_code == 200
+    page_html = page.get_data(as_text=True)
+    assert urdu_name in page_html
+    assert 'dir="auto"' in page_html
+    assert 'id="settleAmount"' in page_html
+
+    # Settle with a custom amount via the URL-encoded party route
+    resp = logged_in_client.post(
+        f'/khata/party/{quote(urdu_name)}/settle',
+        data={'amount': '7500'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.filter_by(party_name=urdu_name).first()
+        assert entry is not None
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 7500.0
