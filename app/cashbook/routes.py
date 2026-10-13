@@ -5,8 +5,28 @@ from app.cashbook import cashbook_bp
 from app.cashbook.forms import CashEntryForm
 from app.models.cashbook import CashEntry
 from app.models.stock import StockItem
+from app.models.loan import Loan, LoanPayment
+from app.models.khata import KhataEntry
 from app.extensions import db
 from app.utils import get_user_shop, ensure_opening_cash, recalc_cash_balances, OPENING_CAPITAL_DESC
+
+
+def _auto_entry_ids(shop_id):
+    """Cash entry IDs owned by a source document — loan inception, installment,
+    or khata settlement. These must only be deleted through their source."""
+    ids = set()
+    queries = (
+        db.session.query(Loan.cash_entry_id)
+        .filter(Loan.shop_id == shop_id, Loan.cash_entry_id.isnot(None)),
+        db.session.query(LoanPayment.cash_entry_id)
+        .join(Loan, Loan.id == LoanPayment.loan_id)
+        .filter(Loan.shop_id == shop_id, LoanPayment.cash_entry_id.isnot(None)),
+        db.session.query(KhataEntry.settled_cash_entry_id)
+        .filter(KhataEntry.shop_id == shop_id, KhataEntry.settled_cash_entry_id.isnot(None)),
+    )
+    for query in queries:
+        ids.update(cid for (cid,) in query.all())
+    return ids
 
 
 @cashbook_bp.route('/')
@@ -40,6 +60,7 @@ def list_entries():
         subtotal_in=subtotal_in,
         subtotal_out=subtotal_out,
         net=subtotal_in - subtotal_out,
+        protected_ids=_auto_entry_ids(shop.id),
     )
 
 
@@ -104,8 +125,9 @@ def delete_entry(entry_id):
         flash('Cash entry not found.', 'danger')
         return redirect(url_for('cashbook.list_entries'))
 
-    if not _is_manual_entry(entry):
-        flash('Only manually added entries can be deleted. Stock/expense-linked and opening capital entries are automatic.', 'warning')
+    if not _is_manual_entry(entry) or entry.id in _auto_entry_ids(shop.id):
+        flash('Automatic entries (stock, expense, loan, khata, opening capital) '
+              'cannot be deleted here — delete them from their source instead.', 'warning')
         return redirect(url_for('cashbook.list_entries'))
 
     db.session.delete(entry)

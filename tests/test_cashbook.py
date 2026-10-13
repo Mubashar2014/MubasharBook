@@ -286,3 +286,115 @@ def test_cashbook_shows_final_net_total_row(logged_in_client, app):
     assert 'Rs 10,000' not in net_row   # no raw subtotal leaked into the net row
     # highlighted band (gold tint)
     assert 'rgba(201,169,89,0.28)' in net_row
+
+
+# ── Auto entries (loan / installment / khata) cannot be deleted from cashbook ─
+
+def test_delete_loan_inception_cash_refused(logged_in_client, app):
+    logged_in_client.post('/expenses/loans/add', data={
+        'direction': 'borrowed', 'party_name': 'Cash Guard Lender',
+        'principal': 90000, 'start_date': '2026-10-13',
+    }, follow_redirects=False)
+
+    with app.app_context():
+        cash = CashEntry.query.filter(
+            CashEntry.description == 'Loan received from Cash Guard Lender'
+        ).first()
+        assert cash is not None
+        cash_id = cash.id
+
+    resp = logged_in_client.post(f'/cashbook/{cash_id}/delete', follow_redirects=True)
+    assert resp.status_code == 200
+    assert 'cannot be deleted here' in resp.get_data(as_text=True)
+
+    with app.app_context():
+        assert db.session.get(CashEntry, cash_id) is not None
+
+
+def test_delete_installment_cash_refused(logged_in_client, app):
+    logged_in_client.post('/expenses/loans/add', data={
+        'direction': 'borrowed', 'party_name': 'Cash Guard Payee',
+        'principal': 90000, 'start_date': '2026-10-13',
+    }, follow_redirects=False)
+
+    with app.app_context():
+        from app.models.loan import Loan
+        loan_id = Loan.query.filter_by(party_name='Cash Guard Payee').first().id
+
+    logged_in_client.post(f'/expenses/loans/{loan_id}/payments', data={
+        'amount': 40000, 'paid_date': '2026-10-13',
+    }, follow_redirects=False)
+
+    with app.app_context():
+        cash = CashEntry.query.filter(
+            CashEntry.description == 'Loan installment paid to Cash Guard Payee'
+        ).first()
+        assert cash is not None
+        cash_id = cash.id
+
+    logged_in_client.post(f'/cashbook/{cash_id}/delete', follow_redirects=True)
+
+    with app.app_context():
+        assert db.session.get(CashEntry, cash_id) is not None
+
+
+def test_delete_khata_settle_cash_refused(logged_in_client, app):
+    logged_in_client.post('/stock/in', data={
+        'model_name': 'Cash Guard Phone', 'quantity': 1, 'cost_price': 40000,
+        'purchase_date': '2026-10-13', 'supplier_name': 'Cash Guard Supplier',
+        'purchase_paid': 20000, 'purchase_expense_desc': '', 'purchase_expense_amount': 0,
+    }, follow_redirects=False)
+
+    with app.app_context():
+        from app.models.khata import KhataEntry
+        khata_id = KhataEntry.query.filter_by(
+            party_name='Cash Guard Supplier', status='pending'
+        ).first().id
+
+    logged_in_client.post(f'/khata/{khata_id}/settle', follow_redirects=False)
+
+    with app.app_context():
+        cash = CashEntry.query.filter(
+            CashEntry.description.like('Khata settled%Cash Guard Supplier%')
+        ).first()
+        assert cash is not None
+        cash_id = cash.id
+
+    logged_in_client.post(f'/cashbook/{cash_id}/delete', follow_redirects=True)
+
+    with app.app_context():
+        assert db.session.get(CashEntry, cash_id) is not None
+
+
+def test_auto_entries_have_no_delete_button(logged_in_client, app):
+    logged_in_client.post('/expenses/loans/add', data={
+        'direction': 'lent', 'party_name': 'Cash Guard Borrower',
+        'principal': 50000, 'start_date': '2026-10-13',
+    }, follow_redirects=False)
+
+    resp = logged_in_client.get('/cashbook/')
+    html = resp.get_data(as_text=True)
+    assert 'Loan given to Cash Guard Borrower' in html
+    # The auto entry row renders without a delete form
+    block = html[html.find('Loan given to Cash Guard Borrower'):]
+    block = block[:block.find('</tr>')]
+    assert '/delete' not in block
+
+
+def test_manual_entry_still_deletable(logged_in_client, app):
+    logged_in_client.post('/cashbook/add', data={
+        'entry_type': 'out', 'amount': 1500,
+        'description': 'Manual Guard Entry', 'entry_date': '2026-10-13',
+        'linked_stock_id': 0,
+    }, follow_redirects=False)
+
+    with app.app_context():
+        entry = CashEntry.query.filter_by(description='Manual Guard Entry').first()
+        assert entry is not None
+        entry_id = entry.id
+
+    resp = logged_in_client.post(f'/cashbook/{entry_id}/delete', follow_redirects=False)
+    assert resp.status_code == 302
+
+    with app.app_context():
+        assert db.session.get(CashEntry, entry_id) is None
