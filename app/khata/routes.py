@@ -107,6 +107,23 @@ def settle_khata(entry_id):
 
     pending = float(entry.amount) - float(entry.settled_amount or 0)
 
+    # Editable amount: absent → settle the full remainder (old callers);
+    # present → validate 0 < amount <= pending, settle partially if less.
+    raw_amount = (request.form.get('amount') or '').strip().replace(',', '')
+    if raw_amount:
+        try:
+            settle_amount = round(float(raw_amount), 2)
+        except (TypeError, ValueError):
+            settle_amount = 0.0
+        if settle_amount <= 0:
+            flash('Enter an amount greater than 0.', 'danger')
+            return redirect(url_for('khata.party_detail', party_name=entry.party_name))
+        if settle_amount > pending + 0.005:
+            flash(f'Amount cannot exceed the pending Rs {pending:,.0f}.', 'danger')
+            return redirect(url_for('khata.party_detail', party_name=entry.party_name))
+    else:
+        settle_amount = pending
+
     # Auto cash entry
     if entry.entry_type == 'receivable':
         cash_type = 'in'
@@ -118,12 +135,12 @@ def settle_khata(entry_id):
     ensure_opening_cash(shop)
     prev = CashEntry.query.filter_by(shop_id=shop.id).order_by(CashEntry.id.desc()).first()
     prev_balance = float(prev.balance_after) if prev and prev.balance_after else float(shop.initial_investment or 0)
-    new_balance = prev_balance + pending if cash_type == 'in' else prev_balance - pending
+    new_balance = prev_balance + settle_amount if cash_type == 'in' else prev_balance - settle_amount
 
     cash = CashEntry(
         shop_id=shop.id,
         entry_type=cash_type,
-        amount=pending,
+        amount=settle_amount,
         description=desc,
         entry_date=date.today(),
         linked_stock_id=entry.linked_stock_id,
@@ -132,16 +149,21 @@ def settle_khata(entry_id):
     db.session.add(cash)
     db.session.flush()
 
-    entry.settled_amount = entry.amount
-    entry.status = 'settled'
-    entry.settled_date = date.today()
+    entry.settled_amount = float(entry.settled_amount or 0) + settle_amount
     entry.settled_cash_entry_id = cash.id
+    if float(entry.settled_amount) >= float(entry.amount) - 0.005:
+        entry.status = 'settled'
+        entry.settled_date = date.today()
     db.session.commit()
 
-    flash(f'Khata settled — Rs {pending:,.0f} added to cashbook.', 'success')
+    if entry.status == 'settled':
+        flash(f'Khata settled — Rs {settle_amount:,.0f} added to cashbook.', 'success')
+    else:
+        remaining = pending - settle_amount
+        flash(f'Rs {settle_amount:,.0f} settled — Rs {remaining:,.0f} still pending.', 'success')
 
-    # Linked to a phone? Send the settlement receipt right away.
-    if entry.linked_stock_id:
+    # Fully settled against a phone? Send the settlement receipt right away.
+    if entry.status == 'settled' and entry.linked_stock_id:
         item = StockItem.query.filter_by(id=entry.linked_stock_id, shop_id=shop.id).first()
         if item:
             if item.purchase_khata_entry_id == entry.id:

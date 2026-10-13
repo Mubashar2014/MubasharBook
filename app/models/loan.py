@@ -22,6 +22,7 @@ class Loan(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.String(300), nullable=True)
     status = db.Column(db.String(10), nullable=False, default='active')  # 'active' | 'closed'
+    cash_entry_id = db.Column(db.Integer, nullable=True)  # inception cash entry (disbursement/advance)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     payments = db.relationship(

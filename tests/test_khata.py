@@ -339,3 +339,111 @@ def test_party_detail_handles_raw_percent_encoded_path(logged_in_client, app):
         entry = KhataEntry.query.filter_by(party_name='Raw Path Supplier').first()
         assert entry.status == 'pending'
         assert float(entry.settled_amount or 0) == 9000.0
+
+
+# ── Editable per-row settle (custom amount on each pending row) ─────────────
+
+def test_row_settle_with_custom_amount(logged_in_client, app):
+    _add_stock(logged_in_client, 'Row Edit Phone', 40000, 20000, 'Row Edit Supplier')
+    with app.app_context():
+        khata = KhataEntry.query.filter_by(party_name='Row Edit Supplier').first()
+        khata_id = khata.id
+
+    resp = logged_in_client.post(
+        f'/khata/{khata_id}/settle',
+        data={'amount': '7000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.get(khata_id)
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 7000.0
+        cash = CashEntry.query.filter(
+            CashEntry.description.like('Khata settled%Row Edit Supplier%')
+        ).first()
+        assert float(cash.amount) == 7000.0
+
+
+def test_row_settle_without_amount_settles_full(logged_in_client, app):
+    """Old callers (no amount field) still settle the whole remainder."""
+    _add_stock(logged_in_client, 'Row Full Phone', 40000, 20000, 'Row Full Supplier')
+    with app.app_context():
+        khata_id = KhataEntry.query.filter_by(party_name='Row Full Supplier').first().id
+
+    logged_in_client.post(f'/khata/{khata_id}/settle', follow_redirects=False)
+
+    with app.app_context():
+        entry = KhataEntry.query.get(khata_id)
+        assert entry.status == 'settled'
+        assert float(entry.settled_amount) == 20000.0
+
+
+def test_row_settle_rejects_over_amount(logged_in_client, app):
+    _add_stock(logged_in_client, 'Row Over Phone', 40000, 20000, 'Row Over Supplier')
+    with app.app_context():
+        khata_id = KhataEntry.query.filter_by(party_name='Row Over Supplier').first().id
+
+    resp = logged_in_client.post(
+        f'/khata/{khata_id}/settle',
+        data={'amount': '25000'}, follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+    with app.app_context():
+        entry = KhataEntry.query.get(khata_id)
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 0.0
+        assert CashEntry.query.filter(
+            CashEntry.description.like('Khata settled%Row Over Supplier%')
+        ).count() == 0
+
+
+def test_row_settle_rejects_zero_and_garbage(logged_in_client, app):
+    _add_stock(logged_in_client, 'Row Zero Phone', 40000, 20000, 'Row Zero Supplier')
+    with app.app_context():
+        khata_id = KhataEntry.query.filter_by(party_name='Row Zero Supplier').first().id
+
+    for bad in ('0', '-5', 'abc'):
+        logged_in_client.post(
+            f'/khata/{khata_id}/settle', data={'amount': bad},
+            follow_redirects=False,
+        )
+
+    with app.app_context():
+        entry = KhataEntry.query.get(khata_id)
+        assert entry.status == 'pending'
+        assert float(entry.settled_amount or 0) == 0.0
+
+
+def test_row_settle_repeated_partials_reach_settled(logged_in_client, app):
+    _add_stock(logged_in_client, 'Row Steps Phone', 40000, 20000, 'Row Steps Supplier')
+    with app.app_context():
+        khata_id = KhataEntry.query.filter_by(party_name='Row Steps Supplier').first().id
+
+    logged_in_client.post(f'/khata/{khata_id}/settle', data={'amount': '8000'},
+                          follow_redirects=False)
+    logged_in_client.post(f'/khata/{khata_id}/settle', data={'amount': '12000'},
+                          follow_redirects=False)
+
+    with app.app_context():
+        entry = KhataEntry.query.get(khata_id)
+        assert entry.status == 'settled'
+        assert float(entry.settled_amount) == 20000.0
+        assert entry.settled_date is not None
+        total_cash = sum(
+            float(c.amount) for c in CashEntry.query.filter(
+                CashEntry.description.like('Khata settled%Row Steps Supplier%')
+            )
+        )
+        assert total_cash == 20000.0
+
+
+def test_pending_row_has_editable_amount_input(logged_in_client):
+    _add_stock(logged_in_client, 'Row Input Phone', 40000, 20000, 'Row Input Supplier')
+    resp = logged_in_client.get('/khata/party/Row Input Supplier')
+    html = resp.get_data(as_text=True)
+    assert 'class="row-settle-amount"' in html
+    assert 'value="20000.00"' in html
+    assert 'max="20000.00"' in html
+    assert 'validateRowSettle' in html

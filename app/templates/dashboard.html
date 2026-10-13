@@ -34,6 +34,13 @@
             <div class="capital-box">
                 <div class="capital-box-label">Investment</div>
                 <div class="capital-box-value">Rs {{ "{:,.0f}".format(initial_investment) }}</div>
+                {% if net_loan_balance %}
+                <div style="font-size:11px;color:#94A3B8;margin-top:2px;">
+                    Base Rs {{ "{:,.0f}".format(base_capital) }}
+                    {{ 'incl.' if net_loan_balance > 0 else 'less' }} net loans
+                    {% if net_loan_balance > 0 %}+{% else %}−{% endif %}Rs {{ "{:,.0f}".format(net_loan_balance|abs) }}
+                </div>
+                {% endif %}
             </div>
             <div class="capital-box">
                 <div class="capital-box-label">Profit/Loss</div>

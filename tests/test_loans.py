@@ -1,4 +1,5 @@
 from datetime import date
+from app.extensions import db
 from app.models.expense import Expense
 from app.models.cashbook import CashEntry
 from app.models.loan import Loan, LoanPayment
@@ -350,3 +351,108 @@ def test_loans_multitenancy(logged_in_client, second_user, app):
         resp = second_client.get('/expenses/?tab=loans')
         html = resp.get_data(as_text=True)
         assert 'My Loan Party' not in html
+
+
+# ── Loan inception cashbook entries + dashboard investment (Option A) ───────
+
+def test_borrowed_loan_inception_creates_cash_in(logged_in_client, app):
+    _add_loan(logged_in_client, principal=200000)
+    with app.app_context():
+        loan = Loan.query.first()
+        assert loan.cash_entry_id is not None
+        cash = CashEntry.query.get(loan.cash_entry_id)
+        assert cash.entry_type == 'in'
+        assert float(cash.amount) == 200000.0
+        assert 'Loan received from Haji Sahab' in cash.description
+
+
+def test_lent_loan_inception_creates_cash_out(logged_in_client, app):
+    _add_loan(logged_in_client, direction='lent', party='Rehman', principal=50000)
+    with app.app_context():
+        loan = Loan.query.first()
+        cash = CashEntry.query.get(loan.cash_entry_id)
+        assert cash.entry_type == 'out'
+        assert float(cash.amount) == 50000.0
+        assert 'Loan given to Rehman' in cash.description
+
+
+def test_loan_lifecycle_nets_cash_to_zero(logged_in_client, app):
+    """Borrow 200k (cash in), pay it all back (cash out) → net cash effect 0."""
+    _add_loan(logged_in_client, principal=200000)
+    with app.app_context():
+        loan_id = Loan.query.first().id
+    _pay(logged_in_client, loan_id, 200000)
+
+    with app.app_context():
+        rows = CashEntry.query.filter(
+            CashEntry.description.like('Loan received from Haji Sahab')
+            | CashEntry.description.like('Loan installment paid to Haji Sahab')
+        ).all()
+        net = sum(float(r.amount) if r.entry_type == 'in' else -float(r.amount)
+                  for r in rows)
+        assert net == 0.0
+
+
+def test_delete_loan_removes_inception_cash_entry(logged_in_client, app):
+    _add_loan(logged_in_client, principal=200000)
+    with app.app_context():
+        loan = Loan.query.first()
+        cash_id = loan.cash_entry_id
+
+    logged_in_client.post(f'/expenses/loans/{loan.id}/delete', follow_redirects=False)
+
+    with app.app_context():
+        assert Loan.query.count() == 0
+        assert db.session.get(CashEntry, cash_id) is None
+
+
+def test_dashboard_investment_includes_net_outstanding_loans(logged_in_client, app):
+    """Option A: Investment = base capital + borrowed outstanding − lent outstanding."""
+    # test_user shop starts with initial_investment=100000
+    _add_loan(logged_in_client, principal=200000)      # borrowed, balance +200000
+    _add_loan(logged_in_client, direction='lent', party='Rehman',
+              principal=50000)                          # lent, balance −50000
+    with app.app_context():
+        b_id = Loan.query.filter_by(direction='borrowed').first().id
+    _pay(logged_in_client, b_id, 60000)                 # borrowed balance now 140000
+
+    resp = logged_in_client.get('/dashboard')
+    html = resp.get_data(as_text=True)
+    # 100000 + 140000 − 50000 = 190000
+    assert 'Rs 190,000' in html
+    # breakdown note visible
+    assert 'net loans' in html
+
+
+def test_dashboard_investment_at_zero_loans_is_base_capital(logged_in_client):
+    resp = logged_in_client.get('/dashboard')
+    html = resp.get_data(as_text=True)
+    assert 'Rs 100,000' in html
+    assert 'net loans' not in html
+
+
+def test_fully_repaid_loan_drops_out_of_investment(logged_in_client, app):
+    _add_loan(logged_in_client, principal=200000)
+    with app.app_context():
+        loan_id = Loan.query.first().id
+    _pay(logged_in_client, loan_id, 200000)
+
+    resp = logged_in_client.get('/dashboard')
+    html = resp.get_data(as_text=True)
+    # 100000 + 0 = 100000 → back to base capital
+    assert 'Rs 100,000' in html
+
+
+def test_lent_collection_raises_investment(logged_in_client, app):
+    _add_loan(logged_in_client, direction='lent', party='Rehman', principal=50000)
+    with app.app_context():
+        loan_id = Loan.query.first().id
+
+    # Before: 100000 − 50000 = 50000
+    resp = logged_in_client.get('/dashboard')
+    assert 'Rs 50,000' in resp.get_data(as_text=True)
+
+    # Collect 20000 → 100000 − 30000 = 70000
+    _pay(logged_in_client, loan_id, 20000)
+    resp = logged_in_client.get('/dashboard')
+    assert 'Rs 70,000' in resp.get_data(as_text=True)

@@ -56,6 +56,17 @@ def dashboard():
     # Initial investment (owner's capital)
     initial_investment = float(shop.initial_investment or 0)
 
+    # Net outstanding loans (Option A): money we still hold from loans we
+    # borrowed, minus money still owed to others on loans we lent out.
+    # Installments shrink these balances, so Investment tracks reality live.
+    from app.models.loan import Loan
+    loans = Loan.query.filter_by(shop_id=shop_id).all()
+    net_loan_balance = sum(
+        (loan.balance if loan.direction == 'borrowed' else -loan.balance)
+        for loan in loans
+    )
+    investment_total = initial_investment + net_loan_balance
+
     # Cumulative profit from sold phones
     sold_items = StockItem.query.filter_by(shop_id=shop_id, status='sold').all()
     total_revenue = sum(float(item.sale_price or 0) * item.quantity for item in sold_items)
@@ -67,8 +78,8 @@ def dashboard():
         Expense.shop_id == shop_id
     ).scalar() or 0)
 
-    # Total Capital = Initial Investment + Cumulative Profit - Expenses
-    total_capital = initial_investment + cumulative_profit - total_expenses
+    # Total Capital = Investment (incl. net loans) + Cumulative Profit - Expenses
+    total_capital = investment_total + cumulative_profit - total_expenses
 
     # ===== WHERE THE MONEY IS =====
     # Cash in hand (includes opening capital entry)
@@ -145,7 +156,9 @@ def dashboard():
 
     return render_template('dashboard.html',
         # Capital
-        initial_investment=initial_investment,
+        initial_investment=investment_total,
+        base_capital=initial_investment,
+        net_loan_balance=net_loan_balance,
         cumulative_profit=cumulative_profit,
         total_expenses=total_expenses,
         total_capital=total_capital,

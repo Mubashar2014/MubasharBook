@@ -324,6 +324,28 @@ def add_loan():
             notes=(form.notes.data or '').strip() or None,
         )
         db.session.add(loan)
+        db.session.flush()
+
+        # Inception cashbook entry — the money physically moves here:
+        # borrowed → cash IN (received), lent → cash OUT (advanced).
+        ensure_opening_cash(shop)
+        if loan.direction == 'borrowed':
+            cash_type = 'in'
+            desc = f"Loan received from {loan.party_name}"
+        else:
+            cash_type = 'out'
+            desc = f"Loan given to {loan.party_name}"
+        cash = CashEntry(
+            shop_id=shop.id,
+            entry_type=cash_type,
+            amount=float(loan.principal),
+            description=desc[:300],
+            entry_date=loan.start_date,
+        )
+        db.session.add(cash)
+        db.session.flush()
+        loan.cash_entry_id = cash.id
+        recalc_cash_balances(shop.id)
         db.session.commit()
         flash(f'Loan added — Rs {float(loan.principal):,.0f} {loan.direction} {loan.party_name}.', 'success')
     else:
@@ -406,7 +428,14 @@ def delete_loan(loan_id):
         flash('Cannot delete — this loan has installment records. Delete them first.', 'warning')
         return redirect(url_for('expenses.list_expenses', tab='loans'))
 
+    # No payments — remove the inception cash entry so balances recompute cleanly.
+    if loan.cash_entry_id:
+        cash = db.session.get(CashEntry, loan.cash_entry_id)
+        if cash:
+            db.session.delete(cash)
     db.session.delete(loan)
+    db.session.flush()
+    recalc_cash_balances(shop.id)
     db.session.commit()
     flash('Loan deleted.', 'success')
     return redirect(url_for('expenses.list_expenses', tab='loans'))
