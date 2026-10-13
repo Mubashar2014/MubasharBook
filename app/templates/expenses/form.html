@@ -56,10 +56,41 @@
             {% endfor %}
         </div>
 
+        <div id="payee-fields" style="display:none;">
+            <div class="field">
+                <label for="payee_name">Paid to (name) <span style="color:var(--cashout);">*</span></label>
+                {{ form.payee_name(id="payee_name", placeholder="e.g. Haji Sahab / Ali Khan") }}
+                {% for error in form.payee_name.errors %}
+                    <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="field">
+                <label for="payee_phone">WhatsApp number (optional — for sending the receipt)</label>
+                {{ form.payee_phone(id="payee_phone", placeholder="03XX XXXXXXX") }}
+                {% for error in form.payee_phone.errors %}
+                    <div style="color:var(--cashout); font-size:12px; margin-top:4px;">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
         <div style="display:flex; gap:10px; margin-top:20px;">
             <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline" style="flex:1;">Cancel</a>
             <button type="submit" class="btn btn-primary" style="flex:1;">{{ 'Update Expense' if expense is defined and expense else 'Save Expense' }}</button>
         </div>
     </form>
 </div>
+<script>
+(function () {
+    var select = document.getElementById('category_id');
+    var payeeBox = document.getElementById('payee-fields');
+    function sync() {
+        if (!select || !payeeBox) return;
+        var text = select.options[select.selectedIndex]
+            ? select.options[select.selectedIndex].text.toLowerCase() : '';
+        var show = text === 'rent' || text === 'staff salary' || text === 'salary';
+        payeeBox.style.display = show ? 'block' : 'none';
+    }
+    if (select) { select.addEventListener('change', sync); sync(); }
+})();
+</script>
 {% endblock %}

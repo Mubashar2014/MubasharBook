@@ -12,6 +12,19 @@
     </div>
 </div>
 
+<!-- Tabs -->
+<div class="filter-chips" style="margin-bottom:18px;">
+    <a href="{{ url_for('expenses.list_expenses') }}"
+       class="chip {% if tab == 'expenses' %}active{% endif %}">Expenses</a>
+    <a href="{{ url_for('expenses.list_expenses', tab='rent') }}"
+       class="chip {% if tab == 'rent' %}active{% endif %}">Rent</a>
+    <a href="{{ url_for('expenses.list_expenses', tab='salary') }}"
+       class="chip {% if tab == 'salary' %}active{% endif %}">Salary</a>
+    <a href="{{ url_for('expenses.list_expenses', tab='loans') }}"
+       class="chip {% if tab == 'loans' %}active{% endif %}">Loans</a>
+</div>
+
+{% if tab == 'expenses' %}
 <!-- Category filter chips -->
 <div class="filter-chips" style="margin-bottom:18px;">
     <a href="{{ url_for('expenses.list_expenses') }}"
@@ -41,7 +54,12 @@
                     <td data-label="Category">
                         <span class="badge badge-reserved">{{ expense.category.name if expense.category else '—' }}</span>
                     </td>
-                    <td data-label="Description">{{ expense.description or '—' }}</td>
+                    <td data-label="Description">
+                        {{ expense.description or '—' }}
+                        {% if expense.payee_name %}
+                        <div style="font-size:12px;color:var(--ink-faint);">→ {{ expense.payee_name }}</div>
+                        {% endif %}
+                    </td>
                     <td data-label="Amount" class="num-cell">Rs {{ '{:,.0f}'.format(expense.amount|float) }}</td>
                     <td data-label="Actions" style="white-space:nowrap;">
                         <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}"
@@ -70,4 +88,247 @@
         </table>
     </div>
 </div>
+
+{% elif tab in ('rent', 'salary') %}
+<!-- Rent / Salary — payee rows with WhatsApp receipts -->
+{% set rows = rent_rows if tab == 'rent' else salary_rows %}
+{% set label = 'Rent' if tab == 'rent' else 'Salary' %}
+<div class="card">
+    <div class="card-pad" style="padding-bottom:0;">
+        <h3 style="font-family:var(--font-serif);margin-bottom:4px;">{{ label }} payments</h3>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;">
+            Add these via "+ Add Expense" and pick the {{ label }} category — the payee name + WhatsApp number lets you send a paid receipt.
+        </p>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Paid to</th>
+                    <th>Description</th>
+                    <th class="num">Amount</th>
+                    <th>Receipt</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in rows %}
+                <tr>
+                    <td data-label="Date">{{ expense.expense_date.strftime('%d %b %Y') }}</td>
+                    <td data-label="Paid to">
+                        <strong>{{ expense.payee_name or '—' }}</strong>
+                        {% if expense.payee_phone %}
+                        <div style="font-size:12px;color:var(--ink-faint);">{{ expense.payee_phone }}</div>
+                        {% endif %}
+                    </td>
+                    <td data-label="Description">{{ expense.description or '—' }}</td>
+                    <td data-label="Amount" class="num" style="font-weight:700;">Rs {{ '{:,.0f}'.format(expense.amount|float) }}</td>
+                    <td data-label="Receipt">
+                        <a href="{{ wa_share_link(expense.payee_phone, expense_receipt_text(current_user.shop.name if current_user.shop else 'My Shop', expense)) }}"
+                           target="_blank" rel="noopener" class="btn btn-outline btn-sm"
+                           title="Send a paid receipt on WhatsApp">
+                            <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Send receipt
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}"
+                           class="btn btn-outline btn-sm" title="Edit">
+                            <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; padding:32px; color:var(--ink-faint);">
+                        No {{ label|lower }} payments recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif tab == 'loans' %}
+<!-- Loans: add + list with installment recording -->
+<div class="card animate-on-scroll" style="margin-bottom:20px;">
+    <div class="card-pad">
+        <h3 style="font-family:var(--font-serif);margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+            <i data-lucide="landmark" style="width:18px;height:18px;color:var(--gold);"></i>
+            Add a loan
+        </h3>
+        <form method="POST" action="{{ url_for('expenses.add_loan') }}" class="loan-add-form">
+            {{ loan_form.hidden_tag() }}
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;">
+                <div class="field">
+                    <label>Direction</label>
+                    {{ loan_form.direction() }}
+                </div>
+                <div class="field">
+                    <label>Party name</label>
+                    {{ loan_form.party_name(placeholder="e.g. Haji Sahab") }}
+                </div>
+                <div class="field">
+                    <label>Phone (optional)</label>
+                    {{ loan_form.party_phone(placeholder="03XX XXXXXXX") }}
+                </div>
+                <div class="field">
+                    <label>Principal (Rs)</label>
+                    {{ loan_form.principal(placeholder="e.g. 200000") }}
+                </div>
+                <div class="field">
+                    <label>Start date</label>
+                    {{ loan_form.start_date() }}
+                </div>
+                <div class="field">
+                    <label>Notes</label>
+                    {{ loan_form.notes(placeholder="optional") }}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:14px;">
+                <i data-lucide="plus" style="width:15px;height:15px;"></i> Add loan
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if loans %}
+<div style="display:grid;gap:14px;">
+    {% for loan in loans %}
+    {% set shop_name = current_user.shop.name if current_user.shop else 'My Shop' %}
+    <div class="card animate-on-scroll">
+        <div class="card-pad">
+            <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+                <div style="width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;
+                    {% if loan.direction == 'lent' %}background:var(--ledger-tint);color:var(--ledger);
+                    {% else %}background:var(--cashout-tint);color:var(--cashout);{% endif %}">
+                    {{ loan.party_name[0]|upper }}
+                </div>
+                <div style="flex:1;min-width:200px;">
+                    <div class="khata-name" dir="auto" style="font-family:var(--font-serif);font-size:19px;font-weight:600;">
+                        {{ loan.party_name }}
+                    </div>
+                    <div style="font-size:13px;color:var(--ink-faint);margin-top:2px;">
+                        {% if loan.direction == 'lent' %}We lent out{% else %}We borrowed{% endif %}
+                        · {{ loan.start_date.strftime('%d %b %Y') }}
+                        {% if loan.notes %} · {{ loan.notes }}{% endif %}
+                    </div>
+                    <div style="display:flex;gap:16px;margin-top:8px;font-size:13px;flex-wrap:wrap;">
+                        <span>Principal: <strong>Rs {{ '{:,.0f}'.format(loan.principal|float) }}</strong></span>
+                        <span>Paid: <strong>Rs {{ '{:,.0f}'.format(loan.paid_amount) }}</strong></span>
+                        <span>Balance:
+                            <strong style="color:{% if loan.status == 'closed' %}var(--cashin){% else %}var(--gold-deep){% endif %};">
+                                Rs {{ '{:,.0f}'.format(loan.balance) }}
+                            </strong>
+                        </span>
+                        <span class="badge {% if loan.status == 'closed' %}badge-reserved{% endif %}">
+                            {{ loan.status|capitalize }}
+                        </span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+                    {% if loan.status == 'active' and loan.direction == 'lent' %}
+                    <a href="{{ wa_share_link(loan.party_phone, loan_reminder_text(shop_name, loan)) }}"
+                       target="_blank" rel="noopener" class="btn btn-gold btn-sm"
+                       title="Send a loan recovery reminder on WhatsApp">
+                        <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Send reminder
+                    </a>
+                    {% endif %}
+                    {% if loan.payments %}
+                    <a href="{{ wa_share_link(loan.party_phone, loan_receipt_text(shop_name, loan, loan.payments[-1])) }}"
+                       target="_blank" rel="noopener" class="btn btn-outline btn-sm"
+                       title="Send the latest installment receipt on WhatsApp">
+                        <i data-lucide="receipt" style="width:14px;height:14px;"></i> Send receipt
+                    </a>
+                    {% endif %}
+                    {% if not loan.payments %}
+                    <form method="POST" action="{{ url_for('expenses.delete_loan', loan_id=loan.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline btn-sm"
+                                style="color:var(--cashout);border-color:var(--cashout);"
+                                onclick="return confirm('Delete this loan?')">
+                            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if loan.payments %}
+            <div style="overflow-x:auto;margin-top:14px;">
+                <table class="ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th class="num">Amount</th>
+                            <th>Notes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in loan.payments|reverse %}
+                        <tr>
+                            <td data-label="Date" style="white-space:nowrap;">{{ p.paid_date.strftime('%d %b %Y') }}</td>
+                            <td data-label="Amount" class="num" style="font-weight:700;">Rs {{ '{:,.0f}'.format(p.amount|float) }}</td>
+                            <td data-label="Notes">{{ p.notes or '—' }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('expenses.delete_loan_payment', payment_id=p.id) }}" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline btn-sm"
+                                            style="color:var(--cashout);border-color:var(--cashout);"
+                                            title="Delete this installment"
+                                            onclick="return confirm('Delete this installment? The linked cashbook entry will be removed.')">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if loan.status == 'active' %}
+            <form method="POST" action="{{ url_for('expenses.record_loan_payment', loan_id=loan.id) }}"
+                  class="loan-pay-form" style="margin-top:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field" style="margin:0;">
+                    <label style="font-size:12px;">Installment amount (Rs, max {{ '{:,.0f}'.format(loan.balance) }})</label>
+                    <input type="number" name="amount" min="0.01" max="{{ '%.2f'|format(loan.balance) }}"
+                           step="0.01" inputmode="decimal" required
+                           style="width:150px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--card);">
+                </div>
+                <div class="field" style="margin:0;">
+                    <label style="font-size:12px;">Date</label>
+                    <input type="date" name="paid_date" value="{{ today_iso }}" required
+                           style="padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--card);">
+                </div>
+                <div class="field" style="margin:0;flex:1;min-width:140px;">
+                    <label style="font-size:12px;">Notes (optional)</label>
+                    <input type="text" name="notes" maxlength="300" placeholder="e.g. October installment"
+                           style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--card);">
+                </div>
+                <button type="submit" class="btn btn-primary" title="Record this installment">
+                    <i data-lucide="check-circle" style="width:15px;height:15px;"></i> Record payment
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state" style="padding:36px;">
+        <div class="empty-icon"><i data-lucide="landmark" style="width:32px;height:32px;"></i></div>
+        <div class="empty-title">No loans yet</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-top:6px;">
+            Track money you borrowed or lent out — installments update the cashbook without affecting profit/loss.
+        </p>
+    </div>
+</div>
+{% endif %}
+{% endif %}
 {% endblock %}

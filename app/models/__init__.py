@@ -4,6 +4,7 @@ from app.models.stock import StockItem
 from app.models.cashbook import CashEntry
 from app.models.khata import KhataEntry
 from app.models.expense import Expense, ExpenseCategory
+from app.models.loan import Loan, LoanPayment
 from app.models.shareholder import Partner, SplitRule, Period, PeriodSnapshot
 from app.models.subscription import Subscription
 from app.models.payment import Payment

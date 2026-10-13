@@ -23,6 +23,11 @@ class Expense(db.Model):
     amount = db.Column(db.Numeric(12, 2), nullable=False)
     description = db.Column(db.String(300))
     expense_date = db.Column(db.Date, nullable=False)
+    # Payee tracking for rent/salary receipts (optional phone for WhatsApp).
+    payee_name = db.Column(db.String(100), nullable=True)
+    payee_phone = db.Column(db.String(20), nullable=True)
+    # 'general' | 'rent' | 'salary' — set at write time from the category name.
+    kind = db.Column(db.String(20), nullable=True, default='general')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     category = db.relationship(

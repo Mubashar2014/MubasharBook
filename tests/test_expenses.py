@@ -137,6 +137,7 @@ def test_edit_expense_updates_and_syncs_cash(logged_in_client, app, test_user):
         'amount': '7500',
         'description': 'New desc',
         'expense_date': '2024-06-20',
+        'payee_name': 'Landlord Khan',  # rent rows require a payee
     }, follow_redirects=True)
     assert resp.status_code == 200
     assert b'Expense updated.' in resp.data
