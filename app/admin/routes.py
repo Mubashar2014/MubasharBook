@@ -1030,26 +1030,44 @@ def whatsapp_outbox():
 @admin_bp.route('/whatsapp/send-custom', methods=['POST'])
 @admin_required
 def whatsapp_send_custom():
-    """Ad-hoc message: pick a user, type anything, open WhatsApp ready to send.
-    Recorded as kind='custom' in Sent history."""
+    """Compose: pick a user + message type. Custom = typed text (required).
+    Built-in types (welcome / package_active / trial_extended / trial_expired)
+    with an empty textarea send the standard personalized text; typed text
+    overrides it. Either way the row lands in Sent history immediately."""
     from app.models.whatsapp import WhatsAppMessage
     from app.utils import normalise_whatsapp, wa_me_link
+    from app.utils.whatsapp import build_whatsapp_text
 
+    valid_kinds = ('custom', 'welcome', 'package_active',
+                   'trial_extended', 'trial_expired')
+
+    kind = request.form.get('kind', 'custom')
+    if kind not in valid_kinds:
+        kind = 'custom'
     user_id = request.form.get('user_id', type=int)
     text = (request.form.get('message') or '').strip()
     target = db.session.get(User, user_id) if user_id else None
 
     if target is None:
         flash('Select a user.', 'danger')
-    elif not text:
-        flash('Message cannot be empty.', 'danger')
     elif not normalise_whatsapp(target.phone or ''):
         flash('That user has no WhatsApp number.', 'danger')
+    elif kind == 'custom' and not text:
+        flash('Message cannot be empty.', 'danger')
     else:
+        if not text:
+            try:
+                text = build_whatsapp_text(kind, target)
+            except Exception:
+                current_app.logger.exception(
+                    'build_whatsapp_text(%s) failed for user %s', kind, target.id
+                )
+                flash('Could not build that message.', 'danger')
+                return redirect(url_for('admin.whatsapp_outbox', status='pending'))
         msg = WhatsAppMessage(
             user_id=target.id,
             phone=target.phone,
-            kind='custom',
+            kind=kind,
             message=text,
             status='sent',
             sent_at=datetime.utcnow(),

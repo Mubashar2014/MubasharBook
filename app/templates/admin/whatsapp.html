@@ -9,7 +9,8 @@
         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">WhatsApp Messages</h1>
         <p style="color: var(--ink-faint);">
             Automatic reminders for signups, plan allotments, trial extensions and trial expiry — plus
-            any custom message you want to send right now.
+            the new-message box: any built-in type (personalized for the chosen user) or your own text,
+            sent right now.
         </p>
     </div>
 
@@ -23,7 +24,7 @@
         <form method="POST" action="{{ url_for('admin.whatsapp_send_custom') }}" target="_blank"
               style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div style="flex: 0 1 280px; min-width: 230px;">
+            <div style="flex: 0 1 240px; min-width: 220px;">
                 <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">To</div>
                 <select name="user_id" required
                         style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
@@ -33,10 +34,22 @@
                     {% endfor %}
                 </select>
             </div>
-            <div style="flex: 1 1 340px; min-width: 240px;">
+            <div style="flex: 0 1 190px; min-width: 170px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">Message type</div>
+                <select name="kind" id="wa-kind"
+                        style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
+                    <option value="custom" selected>Custom message</option>
+                    <option value="welcome">Welcome</option>
+                    <option value="package_active">Plan allotted</option>
+                    <option value="trial_extended">Trial extended</option>
+                    <option value="trial_expired">Trial expired</option>
+                </select>
+            </div>
+            <div style="flex: 1 1 300px; min-width: 230px;">
                 <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">Message</div>
-                <textarea name="message" rows="2" required maxlength="2000" placeholder="Type any message…"
+                <textarea name="message" id="wa-message" rows="2" required maxlength="2000" placeholder="Type any message…"
                           style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+                <div id="wa-hint" style="font-size: 11.5px; color: var(--ink-faint); margin-top: 5px;">Your text is sent as-is.</div>
             </div>
             <button type="submit" class="btn btn-primary" style="background:#1F7A4D; border-color:#1F7A4D; height: 40px; white-space: nowrap;">
                 <i data-lucide="message-circle" style="width:15px;height:15px;"></i> Send on WhatsApp
@@ -124,4 +137,25 @@
     </div>
     {% endif %}
 </div>
+<script>
+(function () {
+    var kind = document.getElementById('wa-kind');
+    var msg = document.getElementById('wa-message');
+    var hint = document.getElementById('wa-hint');
+    if (!kind || !msg || !hint) return;
+    function sync() {
+        if (kind.value === 'custom') {
+            msg.required = true;
+            msg.placeholder = 'Type any message…';
+            hint.textContent = 'Your text is sent as-is.';
+        } else {
+            msg.required = false;
+            msg.placeholder = 'Leave empty to send the standard personalized text…';
+            hint.textContent = 'Leave empty to send the standard personalized message (user\u2019s name and dates filled in automatically). Or type here to override.';
+        }
+    }
+    kind.addEventListener('change', sync);
+    sync();
+})();
+</script>
 {% endblock %}

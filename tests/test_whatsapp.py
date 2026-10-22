@@ -285,3 +285,74 @@ def test_custom_message_admin_only(client, app):
     }, follow_redirects=False)
     assert resp.status_code == 302
     assert 'login' in resp.headers.get('Location', '').lower()
+
+
+# ── Built-in message types in the compose card ───────────────────────────────
+
+def test_compose_builtin_template_sends_personalized_text(admin_client, app):
+    _signup(app.test_client(), owner='Template Target', phone='03001616161')
+    with app.app_context():
+        uid = User.query.filter_by(email='templatetarget@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'kind': 'welcome', 'message': '',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    loc = resp.headers['Location']
+    assert 'wa.me/923001616161' in loc
+    assert 'Welcome%20to%20Mubashar' in loc
+    assert 'Template%20Target' in loc
+
+    with app.app_context():
+        msg = WhatsAppMessage.query.filter_by(kind='welcome', status='sent').one()
+        assert msg.sent_at is not None
+        assert 'Template Target' in msg.message
+        assert 'Welcome to Mubashar Khata' in msg.message
+
+
+def test_compose_builtin_with_typed_text_overrides(admin_client, app):
+    _signup(app.test_client(), owner='Override Target', phone='03001515151')
+    with app.app_context():
+        uid = User.query.filter_by(email='overridetarget@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'kind': 'trial_expired', 'message': 'Custom override text',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    assert 'Custom%20override%20text' in resp.headers['Location']
+
+    with app.app_context():
+        msg = WhatsAppMessage.query.filter_by(kind='trial_expired').one()
+        assert msg.message == 'Custom override text'
+        assert msg.status == 'sent'
+
+
+def test_compose_invalid_kind_with_empty_text_rejected(admin_client, app):
+    _signup(app.test_client(), owner='Bogus Kind', phone='03001414141')
+    with app.app_context():
+        uid = User.query.filter_by(email='boguskind@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'kind': 'bogus', 'message': '',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert 'Message cannot be empty' in resp.get_data(as_text=True)
+
+    with app.app_context():
+        assert WhatsAppMessage.query.filter_by(status='sent').count() == 0
+
+
+def test_compose_page_lists_all_message_types(admin_client, app):
+    resp = admin_client.get('/admin/whatsapp')
+    html = resp.get_data(as_text=True)
+    assert 'Message type' in html
+    for value, label in [
+        ('custom', 'Custom message'),
+        ('welcome', 'Welcome'),
+        ('package_active', 'Plan allotted'),
+        ('trial_extended', 'Trial extended'),
+        ('trial_expired', 'Trial expired'),
+    ]:
+        assert f'value="{value}"' in html
+        assert label in html
+    assert 'wa-kind' in html
