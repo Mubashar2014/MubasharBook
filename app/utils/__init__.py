@@ -161,19 +161,25 @@ def validate_whatsapp(raw):
     return None
 
 
-def wa_me_link(number, text=''):
-    """Build a wa.me deep link, turning a local PK number into international."""
+def intl_digits(number):
+    """International phone digits (no '+') for wa.me / Evolution API."""
     digits = normalise_whatsapp(number)
     if not digits:
-        return None
+        return ''
     if digits.startswith('92') and len(digits) >= 11:
-        intl = digits
-    elif digits.startswith('0'):
-        intl = '92' + digits[1:]
-    elif len(digits) <= 9:
-        intl = '92' + digits
-    else:
-        intl = digits
+        return digits
+    if digits.startswith('0'):
+        return '92' + digits[1:]
+    if len(digits) <= 9:
+        return '92' + digits
+    return digits
+
+
+def wa_me_link(number, text=''):
+    """Build a wa.me deep link, turning a local PK number into international."""
+    intl = intl_digits(number)
+    if not intl:
+        return None
     link = f'https://wa.me/{intl}'
     if text:
         link += '?text=' + quote(text)

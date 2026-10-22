@@ -11,4 +11,5 @@ from app.models.payment import Payment
 from app.models.email_log import EmailLog
 from app.models.notification import Notification
 from app.models.admin_log import AdminLog
+from app.models.whatsapp import WhatsAppMessage
 

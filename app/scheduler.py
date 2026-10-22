@@ -19,6 +19,7 @@ from app.utils.email import (
     send_trial_reminder_email,
     send_trial_expired_email
 )
+from app.utils.whatsapp import queue_whatsapp
 
 
 def check_trial_reminders():
@@ -96,6 +97,7 @@ def check_trial_expiry():
                 if send_trial_expired_email(user):
                     expired_count += 1
                     current_app.logger.info(f'Sent expiry email to {user.email}')
+                queue_whatsapp(user, 'trial_expired')
                 
             except Exception as e:
                 current_app.logger.error(f'Failed to process expiry for {user.email}: {e}')

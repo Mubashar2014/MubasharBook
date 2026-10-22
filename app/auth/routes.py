@@ -118,6 +118,8 @@ def signup():
 
         # Verification is soft: send the link, but let the user in right away.
         send_verification_email(user)
+        from app.utils.whatsapp import queue_whatsapp
+        queue_whatsapp(user, 'welcome')
 
         login_user(user)
         user.mark_login()

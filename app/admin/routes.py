@@ -37,7 +37,11 @@ def inject_admin_badges():
         return {}
     if not (current_user.is_authenticated and getattr(current_user, 'is_admin', False)):
         return {}
-    return {'pending_payments_count': Payment.query.filter_by(status='pending').count()}
+    from app.models.whatsapp import WhatsAppMessage
+    return {
+        'pending_payments_count': Payment.query.filter_by(status='pending').count(),
+        'whatsapp_pending_count': WhatsAppMessage.query.filter_by(status='pending').count(),
+    }
 
 
 @admin_bp.route('/')
@@ -360,6 +364,8 @@ def activate_subscription(user_id):
         amount=amount,
         notes=notes or None,
     )
+    from app.utils.whatsapp import queue_whatsapp
+    queue_whatsapp(user, 'package_active')
     flash(f'Subscription activated successfully. Rs {amount:,.0f} payment recorded.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -450,6 +456,8 @@ def quick_activate_subscription(user_id):
         period_end=subscription.current_period_end,
         notes=notes or None,
     )
+    from app.utils.whatsapp import queue_whatsapp
+    queue_whatsapp(user, 'package_active')
     flash(f'✅ Subscription activated! {plan.title()} plan for {duration_text}. Expires: {subscription.current_period_end.strftime("%Y-%m-%d")}', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -983,3 +991,97 @@ def account():
     return render_template('admin/account.html',
                            profile_form=profile_form,
                            password_form=password_form)
+
+
+# ====== WHATSAPP OUTBOX ======
+
+@admin_bp.route('/whatsapp')
+@admin_required
+def whatsapp_outbox():
+    """Queued user WhatsApp messages — send, retry or dismiss."""
+    from app.models.whatsapp import WhatsAppMessage
+    from app.utils.whatsapp import evolution_configured
+
+    status_filter = request.args.get('status', 'pending')
+    if status_filter not in ('pending', 'sent', 'failed', 'dismissed', 'all'):
+        status_filter = 'pending'
+    query = WhatsAppMessage.query
+    if status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    messages = query.order_by(WhatsAppMessage.id.desc()).limit(200).all()
+    counts = {
+        s: WhatsAppMessage.query.filter_by(status=s).count()
+        for s in ('pending', 'sent', 'failed', 'dismissed')
+    }
+    counts['all'] = sum(counts.values())
+    return render_template(
+        'admin/whatsapp.html',
+        messages=messages,
+        status_filter=status_filter,
+        counts=counts,
+        evolution_on=evolution_configured(),
+    )
+
+
+@admin_bp.route('/whatsapp/<int:msg_id>/send-api', methods=['POST'])
+@admin_required
+def whatsapp_send_api(msg_id):
+    """Attempt automatic delivery through the Evolution API."""
+    from app.models.whatsapp import WhatsAppMessage
+    from app.utils.whatsapp import evolution_configured, send_via_evolution
+
+    msg = db.session.get(WhatsAppMessage, msg_id)
+    if msg is None:
+        flash('Message not found.', 'danger')
+    elif not evolution_configured():
+        flash('Evolution API is not configured on this server.', 'warning')
+    elif send_via_evolution(msg):
+        db.session.commit()
+        flash('WhatsApp message sent via Evolution API.', 'success')
+    else:
+        db.session.commit()
+        flash(f'Evolution API failed: {msg.error}', 'danger')
+    return redirect(url_for('admin.whatsapp_outbox',
+                            status=request.form.get('status', 'pending')))
+
+
+@admin_bp.route('/whatsapp/<int:msg_id>/mark-sent', methods=['POST'])
+@admin_required
+def whatsapp_mark_sent(msg_id):
+    """Open WhatsApp with the text prefilled; records the click as sent."""
+    from app.models.whatsapp import WhatsAppMessage
+    from app.utils import wa_me_link
+
+    msg = db.session.get(WhatsAppMessage, msg_id)
+    if msg is None:
+        flash('Message not found.', 'danger')
+        return redirect(url_for('admin.whatsapp_outbox'))
+
+    msg.status = 'sent'
+    msg.sent_at = datetime.utcnow()
+    msg.error = None
+    db.session.commit()
+
+    link = wa_me_link(msg.phone, msg.message)
+    if link:
+        return redirect(link)
+    flash('No usable WhatsApp number on this message.', 'warning')
+    return redirect(url_for('admin.whatsapp_outbox',
+                            status=request.form.get('status', 'pending')))
+
+
+@admin_bp.route('/whatsapp/<int:msg_id>/dismiss', methods=['POST'])
+@admin_required
+def whatsapp_dismiss(msg_id):
+    """Drop a message that should not be sent."""
+    from app.models.whatsapp import WhatsAppMessage
+
+    msg = db.session.get(WhatsAppMessage, msg_id)
+    if msg is None:
+        flash('Message not found.', 'danger')
+    else:
+        msg.status = 'dismissed'
+        db.session.commit()
+        flash('Message dismissed.', 'success')
+    return redirect(url_for('admin.whatsapp_outbox',
+                            status=request.form.get('status', 'pending')))

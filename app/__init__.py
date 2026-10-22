@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime
 from flask import Flask, flash, redirect, url_for, request, render_template, jsonify
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
@@ -102,7 +103,18 @@ def create_app(config_name=None):
         # Redirect admin users away from non-admin pages
         if current_user.is_admin and request.endpoint and not request.endpoint.startswith('admin.') and not request.endpoint.startswith('auth.') and not request.endpoint.startswith('static'):
             return redirect(url_for('admin.dashboard'))
-        
+
+        # Trial crossed expiry: queue the WhatsApp notice once (deduped).
+        try:
+            if not current_user.is_admin and current_user.shop is not None:
+                sub = current_user.shop.subscription
+                if (sub is not None and sub.status == 'trial' and sub.trial_end
+                        and datetime.utcnow() > sub.trial_end):
+                    from app.utils.whatsapp import queue_whatsapp
+                    queue_whatsapp(current_user, 'trial_expired')
+        except Exception:  # noqa: BLE001 — notification must never block a request
+            logger.exception('trial_expired WhatsApp queue failed')
+
         if request.method in ('GET', 'HEAD', 'OPTIONS'):
             return None
         if current_user.is_read_only:
