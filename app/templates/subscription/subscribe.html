@@ -54,10 +54,10 @@
             </a>
         </div>
 
-        <!-- Premium Plan -->
-        <div class="card plan-card" style="background: var(--card); border: 3px solid var(--gold); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 0 0 1px var(--gold), var(--shadow-lg); position: relative;">
+        <!-- Premium Plan — coming soon -->
+        <div class="card plan-card" style="background: var(--card); border: 3px solid var(--gold); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 0 0 1px var(--gold), var(--shadow-lg); position: relative; opacity: .85;">
             <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: var(--ink); padding: 4px 16px; border-radius: 16px; font-size: 11px; font-weight: 700; white-space: nowrap;">
-                MOST POPULAR
+                COMING SOON
             </div>
             
             <div style="margin-bottom: 24px;">
@@ -82,14 +82,12 @@
                 {% endfor %}
             </ul>
 
-            <a href="{{ url_for('subscription.payment_instructions', plan='premium', billing_cycle='monthly') }}" 
-               class="btn btn-gold btn-block btn-lg">
-                Subscribe to Premium
-            </a>
-            <a href="{{ url_for('subscription.payment_instructions', plan='premium', billing_cycle='annual') }}" 
-               class="btn btn-outline btn-block" style="margin-top: 8px;">
-                Subscribe Annually (Save 17%)
-            </a>
+            <p style="font-size: 13px; color: var(--ink-faint); margin: 0 0 14px; text-align: center;">
+                Shareholders &amp; investor portal — launching soon.
+            </p>
+            <span class="btn btn-gold btn-block btn-lg" style="opacity: .55; cursor: not-allowed; text-align: center;">
+                Coming soon
+            </span>
         </div>
     </div>
 

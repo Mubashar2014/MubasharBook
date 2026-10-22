@@ -8,6 +8,10 @@ from app.models.shop import Shop
 @pytest.fixture(scope='function')
 def app():
     app = create_app('testing')
+    # Premium (shareholders/profit-split) is off by default in production;
+    # the suite runs with it on so existing feature tests keep working.
+    # Coming-soon tests flip it off per test.
+    app.config.setdefault('PREMIUM_ENABLED', True)
 
     # The fixture keeps one app context alive for the whole test, so Flask reuses
     # it for every request the test makes. Flask-Login caches the resolved user on

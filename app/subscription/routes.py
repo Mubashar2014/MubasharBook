@@ -14,6 +14,7 @@ from app.extensions import db
 from app.models.payment import Payment
 from app.models.subscription import Subscription
 from app.utils.pricing import get_plan_price, PLANS
+from app.utils.premium import premium_enabled
 
 
 def allowed_file(filename):
@@ -44,6 +45,10 @@ def payment_instructions(plan, billing_cycle):
     """Show payment instructions for selected plan."""
     if current_user.is_admin:
         return redirect(url_for('admin.dashboard'))
+
+    if plan == 'premium' and not premium_enabled():
+        flash('The Premium plan is coming soon — Basic is available now.', 'info')
+        return redirect(url_for('subscription.subscribe'))
     
     if plan not in ['basic', 'premium']:
         flash('Invalid plan selected.', 'danger')
@@ -76,7 +81,11 @@ def submit_payment():
     payment_method = request.form.get('payment_method')
     transaction_id = request.form.get('transaction_id', '').strip()
     notes = request.form.get('notes', '').strip()
-    
+
+    if plan == 'premium' and not premium_enabled():
+        flash('The Premium plan is coming soon — Basic is available now.', 'info')
+        return redirect(url_for('subscription.subscribe'))
+
     # Validate inputs
     if plan not in ['basic', 'premium']:
         flash('Invalid plan.', 'danger')

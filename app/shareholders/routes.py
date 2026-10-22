@@ -9,6 +9,19 @@ from app.models.user import Investor
 from app.models.shareholder import Partner, SplitRule, Period, PeriodSnapshot
 from app.models.shop import Shop
 from app.models.stock import StockItem
+from app.utils.premium import premium_enabled
+
+
+@shareholders_bp.before_request
+def _premium_gate():
+    """Premium feature — not launch-ready. Block every shareholders route
+    with a coming-soon notice until PREMIUM_ENABLED is turned on."""
+    if premium_enabled():
+        return None
+    if current_user.is_authenticated:
+        flash('Shareholders & investor profit-split are coming soon — stay tuned!', 'info')
+        return redirect(url_for('main.dashboard'))
+    return redirect(url_for('auth.login'))
 
 
 def get_shop():

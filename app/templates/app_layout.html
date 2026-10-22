@@ -35,9 +35,9 @@
             <span class="ic"><i data-lucide="file-text" style="width:18px;height:18px;"></i></span> Monthly Statement
         </a>
         <div class="side-section-label">Premium</div>
-        <a class="side-link {% if request.endpoint and 'shareholders' in request.endpoint %}active{% endif %}" href="{{ url_for('shareholders.setup') }}">
-            <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Shareholders <span class="pl-tag">PRO</span>
-        </a>
+        <span class="side-link disabled" aria-disabled="true">
+            <span class="ic"><i data-lucide="users" style="width:18px;height:18px;"></i></span> Shareholders <span class="pl-tag" style="background:#5A5748;color:#FFFDF6;">SOON</span>
+        </span>
         <a class="side-link" href="{{ url_for('subscription.my_subscription') }}">
             <span class="ic"><i data-lucide="credit-card" style="width:18px;height:18px;"></i></span> My Subscription
         </a>
@@ -166,5 +166,7 @@
 }
 .verify-banner-dismiss:hover { opacity: 1; }
 .flash-info { background: #EDF5F0; color: #2E5941; border: 1px solid #DDD4B8; }
+.side-link.disabled { opacity: .5; cursor: not-allowed; }
+.side-link.disabled:hover { background: transparent; color: inherit; transform: none; }
 </style>
 {% endblock %}
