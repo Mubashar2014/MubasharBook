@@ -1015,12 +1015,52 @@ def whatsapp_outbox():
         for s in ('pending', 'sent', 'dismissed')
     }
     counts['all'] = sum(counts.values())
+    phone_users = User.query.filter(
+        User.phone.isnot(None), User.phone != ''
+    ).order_by(User.owner_name).all()
     return render_template(
         'admin/whatsapp.html',
         messages=messages,
         status_filter=status_filter,
         counts=counts,
+        phone_users=phone_users,
     )
+
+
+@admin_bp.route('/whatsapp/send-custom', methods=['POST'])
+@admin_required
+def whatsapp_send_custom():
+    """Ad-hoc message: pick a user, type anything, open WhatsApp ready to send.
+    Recorded as kind='custom' in Sent history."""
+    from app.models.whatsapp import WhatsAppMessage
+    from app.utils import normalise_whatsapp, wa_me_link
+
+    user_id = request.form.get('user_id', type=int)
+    text = (request.form.get('message') or '').strip()
+    target = db.session.get(User, user_id) if user_id else None
+
+    if target is None:
+        flash('Select a user.', 'danger')
+    elif not text:
+        flash('Message cannot be empty.', 'danger')
+    elif not normalise_whatsapp(target.phone or ''):
+        flash('That user has no WhatsApp number.', 'danger')
+    else:
+        msg = WhatsAppMessage(
+            user_id=target.id,
+            phone=target.phone,
+            kind='custom',
+            message=text,
+            status='sent',
+            sent_at=datetime.utcnow(),
+        )
+        db.session.add(msg)
+        db.session.commit()
+        link = wa_me_link(target.phone, text)
+        if link:
+            return redirect(link)
+        flash('Could not build the WhatsApp link.', 'danger')
+    return redirect(url_for('admin.whatsapp_outbox', status='pending'))
 
 
 @admin_bp.route('/whatsapp/<int:msg_id>/mark-sent', methods=['POST'])

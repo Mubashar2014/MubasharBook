@@ -213,3 +213,75 @@ def test_dismiss_marks_dismissed(admin_client, app):
 
     with app.app_context():
         assert db.session.get(WhatsAppMessage, msg_id).status == 'dismissed'
+
+
+# ── Custom (ad-hoc) message ──────────────────────────────────────────────────
+
+def test_custom_message_sends_and_records(admin_client, app):
+    _signup(app.test_client(), owner='Custom Target', phone='03001717171')
+    with app.app_context():
+        uid = User.query.filter_by(email='customtarget@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'message': 'Hello from admin',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    loc = resp.headers['Location']
+    assert 'wa.me/923001717171' in loc
+    assert 'Hello%20from%20admin' in loc
+
+    with app.app_context():
+        msg = WhatsAppMessage.query.filter_by(kind='custom').one()
+        assert msg.status == 'sent'
+        assert msg.sent_at is not None
+        assert msg.message == 'Hello from admin'
+        assert msg.phone == '03001717171'
+
+
+def test_custom_message_empty_rejected(admin_client, app):
+    _signup(app.test_client(), owner='Custom Empty', phone='03001818182')
+    with app.app_context():
+        uid = User.query.filter_by(email='customempty@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'message': '   ',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert 'Message cannot be empty' in resp.get_data(as_text=True)
+
+    with app.app_context():
+        assert WhatsAppMessage.query.filter_by(kind='custom').count() == 0
+
+
+def test_custom_message_rejects_user_without_phone(admin_client, app):
+    _signup(app.test_client(), owner='No Phone Two', phone='')
+    with app.app_context():
+        uid = User.query.filter_by(email='nophonetwo@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'message': 'Should not send',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert 'no WhatsApp number' in resp.get_data(as_text=True)
+
+    with app.app_context():
+        assert WhatsAppMessage.query.filter_by(kind='custom').count() == 0
+
+
+def test_compose_form_lists_only_phone_users(admin_client, app):
+    _signup(app.test_client(), owner='Listed User', phone='03001919198')
+    _signup(app.test_client(), owner='Unlisted User', phone='')
+
+    resp = admin_client.get('/admin/whatsapp')
+    html = resp.get_data(as_text=True)
+    assert 'New message' in html
+    assert 'Listed User — 03001919198' in html
+    assert 'Unlisted User —' not in html
+
+
+def test_custom_message_admin_only(client, app):
+    resp = client.post('/admin/whatsapp/send-custom', data={
+        'user_id': 1, 'message': 'x',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    assert 'login' in resp.headers.get('Location', '').lower()

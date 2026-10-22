@@ -8,9 +8,40 @@
     <div style="margin-bottom: 24px;">
         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">WhatsApp Messages</h1>
         <p style="color: var(--ink-faint);">
-            Automatic reminders for signups, plan allotments, trial extensions and trial expiry.
-            Click <strong>Send on WhatsApp</strong> to open the user's chat with the message ready — then tap send.
+            Automatic reminders for signups, plan allotments, trial extensions and trial expiry — plus
+            any custom message you want to send right now.
         </p>
+    </div>
+
+    <!-- Compose a custom message -->
+    <div class="card" style="background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 22px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+            <i data-lucide="send" style="width:17px;height:17px;color:#1F7A4D;"></i>
+            <strong style="font-family: var(--font-serif); font-size: 18px;">New message</strong>
+            <span style="font-size: 12.5px; color: var(--ink-faint);">— send to any user, no event needed</span>
+        </div>
+        <form method="POST" action="{{ url_for('admin.whatsapp_send_custom') }}" target="_blank"
+              style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="flex: 0 1 280px; min-width: 230px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">To</div>
+                <select name="user_id" required
+                        style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
+                    <option value="">Select a user…</option>
+                    {% for u in phone_users %}
+                    <option value="{{ u.id }}">{{ u.owner_name }} — {{ u.phone }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex: 1 1 340px; min-width: 240px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">Message</div>
+                <textarea name="message" rows="2" required maxlength="2000" placeholder="Type any message…"
+                          style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="background:#1F7A4D; border-color:#1F7A4D; height: 40px; white-space: nowrap;">
+                <i data-lucide="message-circle" style="width:15px;height:15px;"></i> Send on WhatsApp
+            </button>
+        </form>
     </div>
 
     <!-- Filters -->
@@ -39,8 +70,9 @@
                             {% if msg.kind == 'welcome' %}background:var(--gold-tint);color:var(--gold-deep);
                             {% elif msg.kind == 'package_active' %}background:#E3F2E9;color:#1F7A4D;
                             {% elif msg.kind == 'trial_extended' %}background:#E4EEFB;color:#2B5FA8;
+                            {% elif msg.kind == 'custom' %}background:#F0EAF7;color:#6B4FA8;
                             {% else %}background:#FBE9E5;color:#A13D2E;{% endif %}">
-                            {{ {'welcome':'Welcome','package_active':'Plan allotted','trial_extended':'Trial extended','trial_expired':'Trial expired'}.get(msg.kind, msg.kind) }}
+                            {{ {'welcome':'Welcome','package_active':'Plan allotted','trial_extended':'Trial extended','trial_expired':'Trial expired','custom':'Custom message'}.get(msg.kind, msg.kind) }}
                         </span>
                         <span class="badge" style="font-size:11.5px; padding:3px 9px; border-radius:999px;
                             {% if msg.status == 'sent' %}background:#E3F2E9;color:#1F7A4D;
