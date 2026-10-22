@@ -1,4 +1,5 @@
-"""WhatsApp user notifications: signup/activation/expiry hooks, outbox, Evolution API."""
+"""WhatsApp user notifications: signup/activation/extension/expiry hooks,
+admin Send Messages menu, one-click wa.me send."""
 from datetime import datetime, timedelta
 
 import pytest
@@ -69,12 +70,11 @@ def test_welcome_queued_only_once(app, client):
         assert WhatsAppMessage.query.filter_by(kind='welcome').count() == 1
 
 
-def test_quick_activate_queues_package_active(admin_client, app):
+def test_quick_activate_queues_plan_allotted(admin_client, app):
     target = app.test_client()
     _signup(target, owner='Pack User', phone='03001112223')
     with app.app_context():
-        user = User.query.filter_by(email='packuser@example.com').first()
-        user_id = user.id
+        user_id = User.query.filter_by(email='packuser@example.com').first().id
 
     resp = admin_client.post(f'/admin/user/{user_id}/quick-activate', data={
         'plan': 'basic', 'duration': '1', 'notes': '',
@@ -91,6 +91,27 @@ def test_quick_activate_queues_package_active(admin_client, app):
         expected_until = user.shop.subscription.current_period_end.strftime('%d %b %Y')
         assert expected_until in msg.message
         assert 'Pack User' in msg.message
+
+
+def test_extend_trial_queues_message(admin_client, app):
+    target = app.test_client()
+    _signup(target, owner='Extend User', phone='03008887776')
+    with app.app_context():
+        user_id = User.query.filter_by(email='extenduser@example.com').first().id
+
+    resp = admin_client.post(f'/admin/user/{user_id}/extend-trial',
+                             data={'days': 7}, follow_redirects=False)
+    assert resp.status_code == 302
+
+    with app.app_context():
+        msg = WhatsAppMessage.query.filter_by(
+            user_id=user_id, kind='trial_extended'
+        ).one()
+        assert msg.status == 'pending'
+        assert 'trial has been extended' in msg.message
+        user = User.query.get(user_id)
+        assert user.trial_end.strftime('%d %b %Y') in msg.message
+        assert 'Extend User' in msg.message
 
 
 def test_trial_expired_queued_once_via_requests(client, app):
@@ -128,33 +149,34 @@ def test_no_trial_expired_while_trial_active(client, app):
         ).count() == 1
 
 
-# ── Admin outbox ─────────────────────────────────────────────────────────────
+# ── Admin Send Messages menu ─────────────────────────────────────────────────
 
-def test_outbox_page_admin_only(admin_client, client, app):
+def test_send_messages_page_admin_only(admin_client, client, app):
     _signup(app.test_client(), owner='Outbox User', phone='03005554443')
 
     resp = admin_client.get('/admin/whatsapp')
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
-    assert 'WhatsApp Outbox' in html
+    assert 'WhatsApp Messages' in html
     assert 'Welcome to Mubashar Khata' in html
-    assert 'Open in WhatsApp' in html
+    assert 'Send on WhatsApp' in html
+    assert 'Evolution' not in html  # manual-only build
+    assert 'send-api' not in html
 
     outsider = client.get('/admin/whatsapp', follow_redirects=False)
     assert outsider.status_code == 302
 
 
-def test_outbox_sent_filter_empty(admin_client, app):
+def test_sent_filter_empty(admin_client, app):
     resp = admin_client.get('/admin/whatsapp?status=sent')
     assert resp.status_code == 200
     assert 'No sent messages.' in resp.get_data(as_text=True)
 
 
-def test_mark_sent_records_and_opens_wa(admin_client, app):
+def test_click_send_records_and_opens_wa(admin_client, app):
     _signup(app.test_client(), owner='Mark User', phone='03006665554')
     with app.app_context():
-        msg = WhatsAppMessage.query.filter_by(kind='welcome').first()
-        msg_id = msg.id
+        msg_id = WhatsAppMessage.query.filter_by(kind='welcome').first().id
 
     resp = admin_client.post(f'/admin/whatsapp/{msg_id}/mark-sent',
                              follow_redirects=False)
@@ -168,6 +190,18 @@ def test_mark_sent_records_and_opens_wa(admin_client, app):
         assert saved.sent_at is not None
 
 
+def test_sent_row_has_no_send_button(admin_client, app):
+    _signup(app.test_client(), owner='Sent Row', phone='03009191918')
+    with app.app_context():
+        msg_id = WhatsAppMessage.query.filter_by(kind='welcome').first().id
+    admin_client.post(f'/admin/whatsapp/{msg_id}/mark-sent', follow_redirects=False)
+
+    resp = admin_client.get('/admin/whatsapp?status=sent')
+    html = resp.get_data(as_text=True)
+    assert 'Sent Row' in html
+    assert '/mark-sent' not in html  # only pending rows offer the send form
+
+
 def test_dismiss_marks_dismissed(admin_client, app):
     _signup(app.test_client(), owner='Dismiss User', phone='03004443332')
     with app.app_context():
@@ -179,80 +213,3 @@ def test_dismiss_marks_dismissed(admin_client, app):
 
     with app.app_context():
         assert db.session.get(WhatsAppMessage, msg_id).status == 'dismissed'
-
-
-# ── Evolution API auto-send ──────────────────────────────────────────────────
-
-def _enable_evolution(app, monkeypatch, responder):
-    monkeypatch.setattr('app.utils.whatsapp._post_json', responder)
-    app.config['EVOLUTION_API_URL'] = 'http://evo.test:8080'
-    app.config['EVOLUTION_API_KEY'] = 'secret-key'
-    app.config['EVOLUTION_INSTANCE'] = 'shop1'
-
-
-def test_evolution_auto_send_success(client, app, monkeypatch):
-    captured = {}
-
-    def fake_post(url, payload, headers, timeout=15):
-        captured.update(url=url, payload=payload, headers=headers)
-        return 200, '{}'
-
-    _enable_evolution(app, monkeypatch, fake_post)
-    _signup(client, owner='Evo User', phone='03001234567')
-
-    with app.app_context():
-        msg = WhatsAppMessage.query.filter_by(kind='welcome').one()
-        assert msg.status == 'sent'
-        assert msg.sent_at is not None
-        assert msg.error is None
-
-    assert captured['url'] == 'http://evo.test:8080/message/sendText/shop1'
-    assert captured['headers'] == {'apikey': 'secret-key'}
-    assert captured['payload']['number'] == '923001234567'
-    assert 'Welcome to Mubashar Khata' in captured['payload']['text']
-
-
-def test_evolution_failure_marks_failed_and_signup_survives(client, app, monkeypatch):
-    def boom(url, payload, headers, timeout=15):
-        raise OSError('connection refused')
-
-    _enable_evolution(app, monkeypatch, boom)
-    resp = _signup(client, owner='Evo Down', phone='03001234567')
-    assert resp.status_code == 302  # signup never breaks
-
-    with app.app_context():
-        msg = WhatsAppMessage.query.filter_by(kind='welcome').one()
-        assert msg.status == 'failed'
-        assert 'connection refused' in (msg.error or '')
-
-
-def test_send_api_route_retries(admin_client, app, monkeypatch):
-    _signup(app.test_client(), owner='Retry User', phone='03002221110')
-    with app.app_context():
-        msg_id = WhatsAppMessage.query.filter_by(kind='welcome').first().id
-
-    def fake_post(url, payload, headers, timeout=15):
-        return 200, '{}'
-
-    _enable_evolution(app, monkeypatch, fake_post)
-    resp = admin_client.post(f'/admin/whatsapp/{msg_id}/send-api',
-                             follow_redirects=True)
-    assert resp.status_code == 200
-    assert 'sent via Evolution API' in resp.get_data(as_text=True)
-
-    with app.app_context():
-        assert db.session.get(WhatsAppMessage, msg_id).status == 'sent'
-
-
-def test_send_api_route_without_config_warns(admin_client, app):
-    _signup(app.test_client(), owner='No Evo', phone='03003332221')
-    with app.app_context():
-        msg_id = WhatsAppMessage.query.filter_by(kind='welcome').first().id
-
-    resp = admin_client.post(f'/admin/whatsapp/{msg_id}/send-api',
-                             follow_redirects=True)
-    assert resp.status_code == 200
-    assert 'not configured' in resp.get_data(as_text=True)
-
-    with app.app_context():
-        assert db.session.get(WhatsAppMessage, msg_id).status == 'pending'

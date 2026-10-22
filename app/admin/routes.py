@@ -296,6 +296,8 @@ def extend_trial(user_id):
 
     from app.utils.email import send_trial_extended_email
     send_trial_extended_email(user, days, user.trial_end)
+    from app.utils.whatsapp import queue_whatsapp
+    queue_whatsapp(user, 'trial_extended')
     flash(f'Trial extended by {days} days.', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
@@ -998,12 +1000,11 @@ def account():
 @admin_bp.route('/whatsapp')
 @admin_required
 def whatsapp_outbox():
-    """Queued user WhatsApp messages — send, retry or dismiss."""
+    """Queued user WhatsApp messages — send or dismiss."""
     from app.models.whatsapp import WhatsAppMessage
-    from app.utils.whatsapp import evolution_configured
 
     status_filter = request.args.get('status', 'pending')
-    if status_filter not in ('pending', 'sent', 'failed', 'dismissed', 'all'):
+    if status_filter not in ('pending', 'sent', 'dismissed', 'all'):
         status_filter = 'pending'
     query = WhatsAppMessage.query
     if status_filter != 'all':
@@ -1011,7 +1012,7 @@ def whatsapp_outbox():
     messages = query.order_by(WhatsAppMessage.id.desc()).limit(200).all()
     counts = {
         s: WhatsAppMessage.query.filter_by(status=s).count()
-        for s in ('pending', 'sent', 'failed', 'dismissed')
+        for s in ('pending', 'sent', 'dismissed')
     }
     counts['all'] = sum(counts.values())
     return render_template(
@@ -1019,30 +1020,7 @@ def whatsapp_outbox():
         messages=messages,
         status_filter=status_filter,
         counts=counts,
-        evolution_on=evolution_configured(),
     )
-
-
-@admin_bp.route('/whatsapp/<int:msg_id>/send-api', methods=['POST'])
-@admin_required
-def whatsapp_send_api(msg_id):
-    """Attempt automatic delivery through the Evolution API."""
-    from app.models.whatsapp import WhatsAppMessage
-    from app.utils.whatsapp import evolution_configured, send_via_evolution
-
-    msg = db.session.get(WhatsAppMessage, msg_id)
-    if msg is None:
-        flash('Message not found.', 'danger')
-    elif not evolution_configured():
-        flash('Evolution API is not configured on this server.', 'warning')
-    elif send_via_evolution(msg):
-        db.session.commit()
-        flash('WhatsApp message sent via Evolution API.', 'success')
-    else:
-        db.session.commit()
-        flash(f'Evolution API failed: {msg.error}', 'danger')
-    return redirect(url_for('admin.whatsapp_outbox',
-                            status=request.form.get('status', 'pending')))
 
 
 @admin_bp.route('/whatsapp/<int:msg_id>/mark-sent', methods=['POST'])

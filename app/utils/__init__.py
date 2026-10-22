@@ -162,7 +162,7 @@ def validate_whatsapp(raw):
 
 
 def intl_digits(number):
-    """International phone digits (no '+') for wa.me / Evolution API."""
+    """International phone digits (no '+') for wa.me links."""
     digits = normalise_whatsapp(number)
     if not digits:
         return ''

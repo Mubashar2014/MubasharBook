@@ -1,25 +1,21 @@
 {% extends "admin_layout.html" %}
-{% block title %}WhatsApp Outbox — Admin{% endblock %}
+{% block title %}WhatsApp Messages — Admin{% endblock %}
 {% block page_title %}WhatsApp{% endblock %}
-{% block page_path %}Admin / Operations / WhatsApp Outbox{% endblock %}
+{% block page_path %}Admin / Operations / WhatsApp Messages{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 0 auto;">
     <div style="margin-bottom: 24px;">
-        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">WhatsApp Outbox</h1>
+        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 8px;">WhatsApp Messages</h1>
         <p style="color: var(--ink-faint);">
-            Automatic messages for signups, package activations and trial expiry.
-            {% if evolution_on %}
-            Evolution API auto-send is <strong style="color:var(--cashin);">ON</strong> — failures can be retried below.
-            {% else %}
-            Auto-send is off — open a message in WhatsApp to send it with one click.
-            {% endif %}
+            Automatic reminders for signups, plan allotments, trial extensions and trial expiry.
+            Click <strong>Send on WhatsApp</strong> to open the user's chat with the message ready — then tap send.
         </p>
     </div>
 
     <!-- Filters -->
     <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
-        {% for key, label in [('pending','Pending'),('sent','Sent'),('failed','Failed'),('dismissed','Dismissed'),('all','All')] %}
+        {% for key, label in [('pending','Pending'),('sent','Sent'),('dismissed','Dismissed'),('all','All')] %}
         <a href="{{ url_for('admin.whatsapp_outbox', status=key) }}"
            style="padding: 7px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-decoration: none;
                   border: 1px solid {{ 'var(--gold-deep)' if status_filter == key else 'var(--rule)' }};
@@ -42,12 +38,12 @@
                         <span class="badge" style="font-size:11.5px; padding:3px 9px; border-radius:999px;
                             {% if msg.kind == 'welcome' %}background:var(--gold-tint);color:var(--gold-deep);
                             {% elif msg.kind == 'package_active' %}background:#E3F2E9;color:#1F7A4D;
+                            {% elif msg.kind == 'trial_extended' %}background:#E4EEFB;color:#2B5FA8;
                             {% else %}background:#FBE9E5;color:#A13D2E;{% endif %}">
-                            {{ {'welcome':'Welcome','package_active':'Package activated','trial_expired':'Trial expired'}.get(msg.kind, msg.kind) }}
+                            {{ {'welcome':'Welcome','package_active':'Plan allotted','trial_extended':'Trial extended','trial_expired':'Trial expired'}.get(msg.kind, msg.kind) }}
                         </span>
                         <span class="badge" style="font-size:11.5px; padding:3px 9px; border-radius:999px;
                             {% if msg.status == 'sent' %}background:#E3F2E9;color:#1F7A4D;
-                            {% elif msg.status == 'failed' %}background:#FBE9E5;color:#A13D2E;
                             {% elif msg.status == 'dismissed' %}background:#EEECE6;color:var(--ink-faint);
                             {% else %}background:var(--gold-tint);color:var(--gold-deep);{% endif %}">
                             {{ msg.status|title }}
@@ -63,35 +59,26 @@
                                 font-size: 14px; line-height: 1.55; white-space: pre-wrap; max-width: 720px;">{{ msg.message }}</div>
 
                     {% if msg.error %}
-                    <div style="margin-top: 8px; font-size: 12.5px; color: #A13D2E;">Error: {{ msg.error }}</div>
+                    <div style="margin-top: 8px; font-size: 12.5px; color: #A13D2E;">Note: {{ msg.error }}</div>
                     {% endif %}
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 8px; min-width: 170px;">
-                    {% if msg.status in ('pending', 'failed') %}
-                        {% if evolution_on %}
-                        <form method="POST" action="{{ url_for('admin.whatsapp_send_api', msg_id=msg.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="{{ status_filter }}">
-                            <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">
-                                <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Send via API
-                            </button>
-                        </form>
-                        {% endif %}
-                        <form method="POST" action="{{ url_for('admin.whatsapp_mark_sent', msg_id=msg.id) }}" target="_blank">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="{{ status_filter }}">
-                            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; background:#1F7A4D; border-color:#1F7A4D;">
-                                <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Open in WhatsApp
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin.whatsapp_dismiss', msg_id=msg.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="{{ status_filter }}">
-                            <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">
-                                <i data-lucide="x" style="width:14px;height:14px;"></i> Dismiss
-                            </button>
-                        </form>
+                    {% if msg.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('admin.whatsapp_mark_sent', msg_id=msg.id) }}" target="_blank">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                        <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; background:#1F7A4D; border-color:#1F7A4D;">
+                            <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Send on WhatsApp
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.whatsapp_dismiss', msg_id=msg.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                        <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">
+                            <i data-lucide="x" style="width:14px;height:14px;"></i> Dismiss
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>

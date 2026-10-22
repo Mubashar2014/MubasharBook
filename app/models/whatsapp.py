@@ -4,8 +4,9 @@ from app.extensions import db
 
 class WhatsAppMessage(db.Model):
     """Outbox row for automatic user WhatsApp notifications (welcome,
-    package activated, trial expired). Sent via Evolution API when
-    configured, otherwise from the admin panel with one click."""
+    plan allotted, trial extended, trial expired). Queued as pending;
+    the admin panel (WhatsApp → Send Messages) opens WhatsApp with the
+    text prefilled for a one-click manual send."""
     __tablename__ = 'whatsapp_messages'
 
     id = db.Column(db.Integer, primary_key=True)

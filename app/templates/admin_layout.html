@@ -64,7 +64,7 @@
 
         <div class="side-section-label">WhatsApp</div>
         <a class="side-link {% if request.endpoint == 'admin.whatsapp_outbox' %}active{% endif %}" href="{{ url_for('admin.whatsapp_outbox') }}">
-            <span class="ic"><i data-lucide="message-circle" style="width:18px;height:18px;"></i></span> Outbox
+            <span class="ic"><i data-lucide="message-circle" style="width:18px;height:18px;"></i></span> Send Messages
             {% if whatsapp_pending_count %}
             <span class="pl-tag" style="background:#1F7A4D;color:#fff;">{{ whatsapp_pending_count }}</span>
             {% endif %}
