@@ -1015,15 +1015,13 @@ def whatsapp_outbox():
         for s in ('pending', 'sent', 'dismissed')
     }
     counts['all'] = sum(counts.values())
-    phone_users = User.query.filter(
-        User.phone.isnot(None), User.phone != ''
-    ).order_by(User.owner_name).all()
+    all_users = User.query.order_by(User.owner_name).all()
     return render_template(
         'admin/whatsapp.html',
         messages=messages,
         status_filter=status_filter,
         counts=counts,
-        phone_users=phone_users,
+        all_users=all_users,
     )
 
 

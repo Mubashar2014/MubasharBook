@@ -268,15 +268,25 @@ def test_custom_message_rejects_user_without_phone(admin_client, app):
         assert WhatsAppMessage.query.filter_by(kind='custom').count() == 0
 
 
-def test_compose_form_lists_only_phone_users(admin_client, app):
+def test_compose_form_lists_all_users_marks_no_phone(admin_client, app):
     _signup(app.test_client(), owner='Listed User', phone='03001919198')
     _signup(app.test_client(), owner='Unlisted User', phone='')
 
     resp = admin_client.get('/admin/whatsapp')
     html = resp.get_data(as_text=True)
     assert 'New message' in html
-    assert 'Listed User — 03001919198' in html
-    assert 'Unlisted User —' not in html
+    # searchable picker present
+    assert 'wa-user-search' in html
+    assert 'Type to search users' in html
+    # every user listed — with phone and without
+    assert 'Listed User' in html
+    assert '03001919198' in html
+    assert 'Unlisted User' in html
+    assert 'no WhatsApp number' in html
+    # no-phone entry is marked non-selectable in the markup
+    assert html.count('data-disabled="1"') >= 1
+    # noscript fallback select for JS-off case
+    assert '<noscript>' in html
 
 
 def test_custom_message_admin_only(client, app):

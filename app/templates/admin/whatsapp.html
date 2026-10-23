@@ -24,15 +24,34 @@
         <form method="POST" action="{{ url_for('admin.whatsapp_send_custom') }}" target="_blank"
               style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div style="flex: 0 1 240px; min-width: 220px;">
+            <div style="flex: 0 1 250px; min-width: 230px; position: relative;" class="wa-user-picker">
                 <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">To</div>
-                <select name="user_id" required
-                        style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
-                    <option value="">Select a user…</option>
-                    {% for u in phone_users %}
-                    <option value="{{ u.id }}">{{ u.owner_name }} — {{ u.phone }}</option>
+                <noscript>
+                    <select name="user_id" style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
+                        <option value="">Select a user…</option>
+                        {% for u in all_users %}
+                        <option value="{{ u.id }}" {% if not u.phone %}disabled{% endif %}>{{ u.owner_name }}{% if u.phone %} — {{ u.phone }}{% else %} — (no WhatsApp number){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </noscript>
+                <input type="text" id="wa-user-search" placeholder="Type to search users…" autocomplete="off"
+                       style="width: 100%; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); font-size: 14px;">
+                <input type="hidden" name="user_id" id="wa-user-id" value="">
+                <div id="wa-user-msg" style="display:none; font-size: 11.5px; color: #A13D2E; margin-top: 4px;"></div>
+                <div id="wa-user-list" style="display:none; position: absolute; z-index: 40; top: 100%; left: 0; right: 0; margin-top: 4px;
+                            max-height: 270px; overflow-y: auto; background: var(--card); border: 1px solid var(--rule);
+                            border-radius: 10px; box-shadow: var(--shadow-lg);">
+                    {% for u in all_users %}
+                    <div class="wa-user-item" data-id="{{ u.id }}"
+                         data-search="{{ (u.owner_name ~ ' ' ~ (u.phone or '') ~ ' ' ~ (u.email or ''))|lower }}"
+                         {% if not u.phone %}data-disabled="1"{% endif %}
+                         style="padding: 9px 12px; cursor: pointer; font-size: 13.5px; display: flex; justify-content: space-between; gap: 10px; align-items: center; border-bottom: 1px solid var(--rule-soft);">
+                        <span{% if not u.phone %} style="opacity: .45;"{% endif %}>{{ u.owner_name }}</span>
+                        <span style="font-size: 11.5px; color: var(--ink-faint); white-space: nowrap;">{% if u.phone %}{{ u.phone }}{% else %}no WhatsApp number{% endif %}</span>
+                    </div>
                     {% endfor %}
-                </select>
+                    <div id="wa-user-empty" style="display:none; padding: 12px; font-size: 13px; color: var(--ink-faint);">No matching users.</div>
+                </div>
             </div>
             <div style="flex: 0 1 190px; min-width: 170px;">
                 <div style="font-size: 12px; font-weight: 700; color: var(--ink-faint); margin-bottom: 5px;">Message type</div>
@@ -144,20 +163,75 @@
     var kind = document.getElementById('wa-kind');
     var msg = document.getElementById('wa-message');
     var hint = document.getElementById('wa-hint');
-    if (!kind || !msg || !hint) return;
-    function sync() {
-        if (kind.value === 'custom') {
-            msg.required = true;
-            msg.placeholder = 'Type any message…';
-            hint.textContent = 'Your text is sent as-is.';
-        } else {
-            msg.required = false;
-            msg.placeholder = 'Leave empty to send the standard personalized text…';
-            hint.textContent = 'Leave empty to send the standard personalized message (user\u2019s name and dates filled in automatically). Or type here to override.';
+    if (kind && msg && hint) {
+        function sync() {
+            if (kind.value === 'custom') {
+                msg.required = true;
+                msg.placeholder = 'Type any message…';
+                hint.textContent = 'Your text is sent as-is.';
+            } else {
+                msg.required = false;
+                msg.placeholder = 'Leave empty to send the standard personalized text…';
+                hint.textContent = 'Leave empty to send the standard personalized message (user\u2019s name and dates filled in automatically). Or type here to override.';
+            }
         }
+        kind.addEventListener('change', sync);
+        sync();
     }
-    kind.addEventListener('change', sync);
-    sync();
+
+    /* Searchable user picker */
+    var picker = document.getElementById('wa-user-search');
+    var hiddenId = document.getElementById('wa-user-id');
+    var list = document.getElementById('wa-user-list');
+    if (!picker || !hiddenId || !list) return;
+    var items = Array.prototype.slice.call(list.querySelectorAll('.wa-user-item'));
+    var empty = document.getElementById('wa-user-empty');
+    var pickMsg = document.getElementById('wa-user-msg');
+    var form = picker.closest('form');
+
+    function filterList() {
+        var q = picker.value.trim().toLowerCase();
+        var shown = 0;
+        items.forEach(function (el) {
+            var hit = el.getAttribute('data-search').indexOf(q) !== -1;
+            el.style.display = hit ? '' : 'none';
+            if (hit) shown++;
+        });
+        empty.style.display = shown ? 'none' : 'block';
+    }
+    picker.addEventListener('focus', function () { list.style.display = 'block'; filterList(); });
+    picker.addEventListener('input', function () {
+        hiddenId.value = '';
+        pickMsg.style.display = 'none';
+        list.style.display = 'block';
+        filterList();
+    });
+    items.forEach(function (el) {
+        el.addEventListener('mousedown', function (ev) {
+            ev.preventDefault();
+            if (el.getAttribute('data-disabled')) {
+                pickMsg.textContent = 'That user has no WhatsApp number.';
+                pickMsg.style.display = 'block';
+                return;
+            }
+            hiddenId.value = el.getAttribute('data-id');
+            picker.value = el.querySelector('span').textContent.trim();
+            pickMsg.style.display = 'none';
+            list.style.display = 'none';
+        });
+    });
+    document.addEventListener('click', function (ev) {
+        if (!ev.target.closest || !ev.target.closest('.wa-user-picker')) list.style.display = 'none';
+    });
+    if (form) form.addEventListener('submit', function (ev) {
+        if (!hiddenId.value) {
+            ev.preventDefault();
+            picker.focus();
+            list.style.display = 'block';
+            pickMsg.textContent = 'Select a user first.';
+            pickMsg.style.display = 'block';
+        }
+    });
 })();
 </script>
 {% endblock %}
