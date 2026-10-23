@@ -356,3 +356,56 @@ def test_compose_page_lists_all_message_types(admin_client, app):
         assert f'value="{value}"' in html
         assert label in html
     assert 'wa-kind' in html
+
+
+# ── Trial-ending built-in ────────────────────────────────────────────────────
+
+def test_compose_trial_ending_sends_days_left(admin_client, app):
+    _signup(app.test_client(), owner='Trial Ending User', phone='03001313131')
+    with app.app_context():
+        uid = User.query.filter_by(email='trialendinguser@example.com').first().id
+
+    resp = admin_client.post('/admin/whatsapp/send-custom', data={
+        'user_id': uid, 'kind': 'trial_ending', 'message': '',
+    }, follow_redirects=False)
+    assert resp.status_code == 302
+    assert 'wa.me/923001313131' in resp.headers['Location']
+
+    with app.app_context():
+        msg = WhatsAppMessage.query.filter_by(kind='trial_ending', status='sent').one()
+        assert 'Trial Ending User' in msg.message
+        assert 'ends in 7 days' in msg.message
+        assert 'Subscribe to a package now' in msg.message
+
+
+def test_trial_ending_wording_by_days_left(app):
+    from app.utils.whatsapp import build_whatsapp_text
+
+    with app.app_context():
+        user = User(
+            owner_name='One Dayer', phone='03001112223',
+            email='onedayer@example.com', language='en', is_verified=True,
+        )
+        user.set_password('password123')
+        user.trial_end = datetime.utcnow() + timedelta(hours=6)
+        db.session.add(user)
+        db.session.commit()
+
+        text = build_whatsapp_text('trial_ending', user)
+        assert 'ends tomorrow' in text
+        assert 'just 1 day left' in text
+
+        user.trial_end = None
+        text = build_whatsapp_text('trial_ending', user)
+        assert 'will end soon' in text
+
+        user.trial_end = datetime.utcnow() - timedelta(hours=1)
+        text = build_whatsapp_text('trial_ending', user)
+        assert 'ends today' in text
+
+
+def test_compose_page_lists_trial_ending_option(admin_client, app):
+    resp = admin_client.get('/admin/whatsapp')
+    html = resp.get_data(as_text=True)
+    assert 'value="trial_ending"' in html
+    assert 'Trial ending soon' in html

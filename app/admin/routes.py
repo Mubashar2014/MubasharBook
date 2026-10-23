@@ -1031,15 +1031,16 @@ def whatsapp_outbox():
 @admin_required
 def whatsapp_send_custom():
     """Compose: pick a user + message type. Custom = typed text (required).
-    Built-in types (welcome / package_active / trial_extended / trial_expired)
-    with an empty textarea send the standard personalized text; typed text
-    overrides it. Either way the row lands in Sent history immediately."""
+    Built-in types (welcome / package_active / trial_extended / trial_ending /
+    trial_expired) with an empty textarea send the standard personalized text;
+    typed text overrides it. Either way the row lands in Sent history
+    immediately."""
     from app.models.whatsapp import WhatsAppMessage
     from app.utils import normalise_whatsapp, wa_me_link
     from app.utils.whatsapp import build_whatsapp_text
 
     valid_kinds = ('custom', 'welcome', 'package_active',
-                   'trial_extended', 'trial_expired')
+                   'trial_extended', 'trial_ending', 'trial_expired')
 
     kind = request.form.get('kind', 'custom')
     if kind not in valid_kinds:

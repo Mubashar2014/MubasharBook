@@ -8,6 +8,7 @@ taps send; the row is recorded as 'sent'. Nothing here may ever break the
 surrounding request (signup, activation...).
 """
 from datetime import datetime
+import math
 
 from flask import current_app
 
@@ -18,7 +19,7 @@ from app.utils import normalise_whatsapp
 
 def build_whatsapp_text(kind, user):
     """Message texts, personalized.
-    kind: welcome | package_active | trial_extended | trial_expired"""
+    kind: welcome | package_active | trial_extended | trial_ending | trial_expired"""
     name = user.owner_name or 'there'
     if kind == 'welcome':
         days = current_app.config.get('TRIAL_DAYS', 7)
@@ -57,6 +58,23 @@ def build_whatsapp_text(kind, user):
             f'Assalam-o-Alaikum {name}! {extended} '
             'Keep recording your sales and khata. '
             'Need help? Just reply to this message.'
+        )
+    if kind == 'trial_ending':
+        ending = 'Your free trial period will end soon'
+        if user.trial_end:
+            remaining = (user.trial_end - datetime.utcnow()).total_seconds()
+            days = math.ceil(remaining / 86400)
+            if days <= 0:
+                ending = 'Your free trial period ends today'
+            elif days == 1:
+                ending = 'Your free trial ends tomorrow — just 1 day left'
+            else:
+                ending = f'Your free trial ends in {days} days'
+        return (
+            f'Assalam-o-Alaikum {name}! {ending}. '
+            'Subscribe to a package now to keep recording sales, stock and khata '
+            'without interruption. Reply to this message if you need help '
+            'choosing a plan.'
         )
     if kind == 'trial_expired':
         return (
