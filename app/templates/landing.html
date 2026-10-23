@@ -43,9 +43,9 @@
                     <i data-lucide="rocket" style="width:18px;height:18px;"></i>
                     Start my 7-day free trial
                 </a>
-                <button class="btn btn-outline btn-lg">
-                    <i data-lucide="play" style="width:16px;height:16px;"></i>
-                    Watch 90-sec demo
+                <button class="btn btn-outline btn-lg" id="demo-open" type="button">
+                    <i data-lucide="play" style="width:18px;height:18px;"></i>
+                    Watch 2-min demo
                 </button>
             </div>
             <div class="hero-trust">
@@ -285,6 +285,19 @@
         </div>
     </div>
 </footer>
+
+<!-- ========== DEMO VIDEO MODAL ========== -->
+<div id="demo-modal" style="display:none; position:fixed; inset:0; z-index:1000; background:rgba(20,19,17,.84); padding:24px; align-items:center; justify-content:center;" role="dialog" aria-modal="true" aria-label="Product demo video">
+    <div style="position:relative; width:100%; max-width:960px;">
+        <button id="demo-close" type="button" aria-label="Close video"
+                style="position:absolute; top:-44px; right:0; background:rgba(255,255,255,.14); border:none; color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:17px; line-height:1;">
+            ✕
+        </button>
+        <video id="demo-video" controls autoplay playsinline preload="metadata"
+               src="{{ url_for('static', filename='videos/2mints.mp4') }}"
+               style="width:100%; max-height:80vh; background:#000; border-radius:12px; display:block;"></video>
+    </div>
+</div>
 
 <style>
 /* ============ MARKETING STYLES ============ */
@@ -620,5 +633,37 @@
     font-size: 13px; color: var(--ink-faint);
 }
 .mkt-footer-right a:hover { color: var(--ink); }
+/* ============ DEMO MODAL ============ */
+#demo-modal { backdrop-filter: blur(2px); }
+#demo-close:hover { background: rgba(255,255,255,.28); }
+@media (max-width: 600px) {
+    #demo-modal { padding: 12px; }
+    #demo-close { top: -40px !important; }
+}
 </style>
+<script>
+(function () {
+    var openBtn = document.getElementById('demo-open');
+    var modal = document.getElementById('demo-modal');
+    var closeBtn = document.getElementById('demo-close');
+    var video = document.getElementById('demo-video');
+    if (!openBtn || !modal || !closeBtn || !video) return;
+    function open() {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        try { video.currentTime = 0; video.play(); } catch (e) {}
+    }
+    function close() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        video.pause();
+    }
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    modal.addEventListener('click', function (ev) { if (ev.target === modal) close(); });
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && modal.style.display !== 'none') close();
+    });
+})();
+</script>
 {% endblock %}
